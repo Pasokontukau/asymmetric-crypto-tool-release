@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.CryptoAssistant" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/window_background</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+
+    <!--
+        面板容器自己负责“球→卡片”的全部动画；系统 Activity/task 过渡必须归零，
+        否则会把整个透明窗口（连同球代理）从底部带入/带出。
+    -->
+    <style name="Animation.CryptoAssistant.None" parent="@android:style/Animation.Activity">
+        <item name="android:activityOpenEnterAnimation">@null</item>
+        <item name="android:activityOpenExitAnimation">@null</item>
+        <item name="android:activityCloseEnterAnimation">@null</item>
+        <item name="android:activityCloseExitAnimation">@null</item>
+        <item name="android:windowEnterAnimation">@null</item>
+        <item name="android:windowExitAnimation">@null</item>
+    </style>
+
+    <!--
+        悬浮球文字动作用的轻量胶囊：透明窗口 + 自绘遮罩，
+        让当前应用仍可见在下方，像系统小面板一样浮在上面。
+    -->
+    <style name="Theme.CryptoAssistant.Capsule" parent="Theme.CryptoAssistant">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowIsFloating">false</item>
+        <item name="android:backgroundDimEnabled">false</item>
+        <item name="android:windowDisablePreview">true</item>
+        <item name="android:windowAnimationStyle">@style/Animation.CryptoAssistant.None</item>
+    </style>
+</resources>

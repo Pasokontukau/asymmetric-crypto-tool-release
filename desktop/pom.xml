@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.example</groupId>
+    <artifactId>asymmetric-encryption-tool</artifactId>
+    <!-- 桌面端随包携带 JDK 17 运行时；版本只在这里维护，不改 Android 的 1.4.0/26 基线。
+         使用 Maven CI-friendly 的 revision 占位符，避免“version 含表达式”的构建警告。 -->
+    <version>${revision}</version>
+
+    <properties>
+        <revision>1.4.0</revision>
+        <!-- 桌面端运行在随包 JDK 17 上，不再承诺 Java 8 运行。 -->
+        <maven.compiler.release>17</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <!-- 与 shared/crypto-core/build.gradle.kts 的 version 保持一致；升级内核时两处同步。 -->
+        <crypto-core.version>1.4.0</crypto-core.version>
+    </properties>
+
+    <dependencies>
+        <!-- 共享加密内核：固定版本 artifact，构建期不再复制任何一端的源码。
+             本地构建先执行 android/gradlew :crypto-core:publishToMavenLocal（build.bat 会自动做）；
+             远端发布见 docs/desktop/桌面端对齐安卓端规划.md 的 D-E。 -->
+        <dependency>
+            <groupId>com.cryptoassistant</groupId>
+            <artifactId>crypto-core</artifactId>
+            <version>${crypto-core.version}</version>
+            <!-- 不含 Android 平台桩；桌面端使用自己的 LogManager / OperationMonitor。 -->
+            <classifier>desktop</classifier>
+        </dependency>
+
+        <!-- JUnit 测试依赖 -->
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.13.2</version>
+            <scope>test</scope>
+        </dependency>
+        
+        <!-- FlatLaf 依赖 -->
+        <dependency>
+            <groupId>com.formdev</groupId>
+            <artifactId>flatlaf</artifactId>
+            <version>3.2.5</version>
+        </dependency>
+        
+        <!-- JavaFX 依赖 - Java 8内置，无需单独引入 -->
+        
+        <!-- Gson JSON 库 - 用于安全序列化 -->
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.10.1</version>
+        </dependency>
+
+        <!-- 与 shared/crypto-core 相同的 BouncyCastle 版本（crypto/file 使用） -->
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcprov-jdk18on</artifactId>
+            <version>1.78.1</version>
+        </dependency>
+        
+        <!-- JNA - 用于调用Windows DPAPI -->
+        <dependency>
+            <groupId>net.java.dev.jna</groupId>
+            <artifactId>jna</artifactId>
+            <version>5.14.0</version>
+        </dependency>
+        <dependency>
+            <groupId>net.java.dev.jna</groupId>
+            <artifactId>jna-platform</artifactId>
+            <version>5.14.0</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!-- Maven 编译插件 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.8.1</version>
+                <configuration>
+                    <release>${maven.compiler.release}</release>
+                </configuration>
+            </plugin>
+
+            <!-- Maven 打包插件 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>3.3.0</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <mainClass>app.AppMain</mainClass>
+                        </manifest>
+                    </archive>
+                    <descriptorRefs>
+                        <descriptorRef>jar-with-dependencies</descriptorRef>
+                    </descriptorRefs>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>make-assembly</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

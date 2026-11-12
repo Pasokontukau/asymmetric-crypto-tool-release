@@ -1,0 +1,11 @@
+# Android Gradle 构建产物与本机配置
+.gradle/
+build/
+local.properties
+*.iml
+# Gradle wrapper jar 必须随仓库提供
+!gradle/wrapper/gradle-wrapper.jar
+.idea/
+captures/
+.externalNativeBuild/
+.cxx/

@@ -1,0 +1,29 @@
+target/
+build/
+bin/
+out/
+dist/
+*.class
+*.jar
+*.apk
+jdk-*/
+lib/
+/data/
+/desktop/data/
+/desktop/config/
+*.log
+# Gradle wrapper 必须入库，否则新环境无法构建
+!android/gradle/wrapper/gradle-wrapper.jar
+backups/
+# Android 本机配置与 release 签名（密钥库/口令绝不入库）
+android/local.properties
+android/keystore.properties
+android/*.keystore
+android/.kotlin/
+android/window.tmp.xml
+# IDE / 系统临时文件
+.idea/
+*.iml
+.DS_Store
+Thumbs.db
+*.hprof

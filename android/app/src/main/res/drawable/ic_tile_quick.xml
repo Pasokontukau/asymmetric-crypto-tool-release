@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    快捷设置磁贴图标规范：24dp × 24dp、纯白填充、透明背景。
+    控制中心会当作单色蒙版着色，不能带颜色或底板。闪电 = 便捷/快捷。
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M13,2L4.5,13.5H11L10,22L18.5,10.5H12L13,2z" />
+</vector>

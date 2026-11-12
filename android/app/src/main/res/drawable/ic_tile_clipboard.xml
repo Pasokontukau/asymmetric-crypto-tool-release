@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    快捷设置磁贴图标：24dp、纯白、透明底。
+    造型刻意比盾牌更「纸」：圆角页 + 顶部夹子 + 三条镂空文字线；
+    在 22dp 的实际绘制尺寸下仍能和悬浮球的盾牌区分开。
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M9,2h6a1,1 0 0 1 1,1v2h-8V3a1,1 0 0 1 1,-1zM6,5h12a2,2 0 0 1 2,2v13a2,2 0 0 1 -2,2H6a2,2 0 0 1 -2,-2V7a2,2 0 0 1 2,-2zM9,10h6v1.4H9zM9,13.2h6v1.4H9zM9,16.4h4v1.4H9z" />
+</vector>

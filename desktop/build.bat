@@ -1,0 +1,90 @@
+@echo off
+chcp 936 >nul
+
+echo ========================================
+echo  Build ^& Package (Maven)
+echo ========================================
+echo.
+
+cd /d "%~dp0"
+
+set "MVN=%MAVEN_HOME%\bin\mvn.cmd"
+if not exist "%MVN%" set "MVN="
+REM This machine keeps Maven under .trae-cn but not on PATH (see docs/agent/environment.md).
+if not defined MVN if exist "%USERPROFILE%\.trae-cn\tools\maven\latest\bin\mvn.cmd" set "MVN=%USERPROFILE%\.trae-cn\tools\maven\latest\bin\mvn.cmd"
+if not defined MVN for /f "delims=" %%i in ('where mvn 2^>nul') do set "MVN=%%i"
+
+if not defined MVN (
+    echo ERROR: Maven not found.
+    echo   Install Maven, or set MAVEN_HOME, or add mvn.cmd to PATH.
+    echo   IntelliJ / Android Studio bundle one under their plugins\maven directory.
+    if /i not "%~1"=="nopause" pause
+    exit /b 1
+)
+
+REM pom.xml targets Java 17 and the portable package bundles a JDK 17 runtime.
+REM Prefer the documented Corretto 17 when JAVA_HOME still points at JDK 8;
+REM otherwise fail with a clear message instead of silently building on Java 8.
+set "JDK17=%USERPROFILE%\.jdks\corretto-17"
+if defined JAVA_HOME (
+    for /f "tokens=2" %%v in ('"%JAVA_HOME%\bin\javac.exe" -version 2^>^&1') do set "JAVAC_VERSION=%%v"
+)
+if defined JAVAC_VERSION (
+    echo %JAVAC_VERSION% | findstr /b /r "1\." >nul
+    if not errorlevel 1 (
+        if exist "%JDK17%\bin\javac.exe" (
+            set "JAVA_HOME=%JDK17%"
+            echo [INFO] JAVA_HOME was JDK 8; switched to %JDK17%
+        ) else (
+            echo ERROR: Desktop build needs JDK 17, but JAVA_HOME is JDK 8.
+            echo   Set JAVA_HOME to a JDK 17 installation, then rerun build.bat.
+            if /i not "%~1"=="nopause" pause
+            exit /b 1
+        )
+    )
+)
+if not defined JAVA_HOME if exist "%JDK17%\bin\javac.exe" set "JAVA_HOME=%JDK17%"
+
+REM 内核是两端共享的上游（..\shared\crypto-core，Gradle 根在 ..\android）：
+REM monorepo 里先把最新源码发布到 Maven Local；独立桌面仓库没有这些目录时跳过，
+REM 改从远端 Maven 仓库解析固定版本。
+if exist "..\android\gradlew.bat" (
+    echo Publishing shared crypto-core to Maven Local...
+    pushd "..\android"
+    call gradlew.bat -Dorg.gradle.jvmargs="-Xmx2048m -Dfile.encoding=GBK" :crypto-core:publishToMavenLocal
+    if errorlevel 1 (
+        popd
+        echo ERROR: Failed to publish shared crypto-core.
+        if /i not "%~1"=="nopause" pause
+        exit /b 1
+    )
+    popd
+)
+
+echo Maven: %MVN%
+echo Running build...
+echo.
+
+call "%MVN%" clean package -DskipTests
+if errorlevel 1 (
+    echo.
+    echo BUILD FAILED
+    if /i not "%~1"=="nopause" pause
+    exit /b 1
+)
+
+echo.
+echo BUILD SUCCESS
+if exist "target\*-jar-with-dependencies.jar" (
+    for %%f in ("target\*-jar-with-dependencies.jar") do (
+        copy /y "%%f" app.jar >nul
+        echo Fat JAR: app.jar
+        echo Run: run.bat
+    )
+) else (
+    echo Output: target\classes
+)
+
+echo.
+if /i not "%~1"=="nopause" pause
+exit /b 0

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- 仅 debug：给 instrumented 测试一个真实的 FragmentActivity 启动链。 -->
+    <application>
+        <activity
+            android:name=".testing.LauncherProbeActivity"
+            android:exported="false"
+            android:theme="@style/Theme.CryptoAssistant" />
+    </application>
+
+</manifest>

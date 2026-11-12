@@ -1,0 +1,222 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- 悬浮球入口：用户显式授权后使用的系统级悬浮窗 -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <!-- 悬浮球需要跨应用常驻，由前台服务承载（Phase 1 起） -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <!-- 仅用于展示前台服务常驻通知，不申请 INTERNET -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- 可选安全锁：仅在用户主动开启后，导出/导入/删除密钥前验证身份 -->
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+    <uses-permission android:name="android.permission.USE_FINGERPRINT" />
+
+    <!--
+        分享/打开前的目标预检（T2）：只用于查询能接收文件的可见应用，不授予任何权限，
+        也不改变 FileProvider 暴露范围。没有这些声明时，Android 11+ 可能把正常目标误判为空。
+    -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="content" android:mimeType="*/*" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.SEND" />
+            <data android:mimeType="*/*" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.SEND_MULTIPLE" />
+            <data android:mimeType="*/*" />
+        </intent>
+    </queries>
+
+    <application
+        android:name=".CryptoAssistantApplication"
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="false"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:localeConfig="@xml/locales_config"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.CryptoAssistant"
+        tools:ignore="UnusedAttribute">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <!--
+                快捷设置磁贴的长按入口：系统找不到这个偏好页时才回退到「应用信息」。
+                两个磁贴都回首页，点按行为仍由各自的 TileService 决定。
+            -->
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE_PREFERENCES" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+
+        </activity>
+
+        <!--
+            系统文件入口（2026-10-31 从 MainActivity 迁入）：VIEW / SEND / SEND_MULTIPLE 的唯一组件。
+            透明、独立任务栈，避免从微信/文件管理器跳转时闪一下主界面。入口先判型；
+            只有「文件快捷处理」开关 + 便捷模式 + 单文件 + 本地身份/接收方都满足时才就地处理
+            并显示 HUD，其余情况（含开关关闭）把原 Intent 原样转给 MainActivity，行为与迁移前一致。
+
+            **不要加 noHistory**：HUD 点「用其他应用打开/分享」后会拉起系统 chooser，HUD 必然被盖住；
+            noHistory 会让系统在 stopped 时提前结束本 Activity，chooser 选中的应用正好在任务被拆掉时
+            启动，部分 ROM（HyperOS）上表现为“选完应用没有反应”。正常离开由代码主动 finish。
+
+            VIEW 用两条 filter：
+            - 只声明 content scheme：覆盖不带 MIME type 的 content intent；
+            - content + */*：覆盖所有带 type 的 content intent（含 type=*/*）。
+            SEND / SEND_MULTIPLE 不写 scheme（URI 在 EXTRA_STREAM，intent.data 通常为空），
+            用 */* 覆盖任意 type。完全不带 type 的 SEND 属于已知边界，见
+            docs/系统文件入口全渠道覆盖方案.md。
+        -->
+        <activity
+            android:name=".feature.open.FileEntryActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:launchMode="singleTop"
+            android:taskAffinity=""
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:theme="@style/Theme.CryptoAssistant.Capsule">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.OPENABLE" />
+                <data android:scheme="content" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.OPENABLE" />
+                <data android:scheme="content" />
+                <data android:mimeType="*/*" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.OPENABLE" />
+                <data android:mimeType="*/*" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.OPENABLE" />
+                <data android:mimeType="*/*" />
+            </intent-filter>
+        </activity>
+
+        <!--
+            悬浮球文字动作的轻量胶囊：点球后在当前应用之上展开、完成加解密后立即关闭。
+            独立任务栈（taskAffinity=""）+ 透明主题，避免把主界面整个拉到前台。
+        -->
+        <activity
+            android:name=".feature.ball.BallActionActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:launchMode="singleTop"
+            android:taskAffinity=""
+            android:windowSoftInputMode="adjustResize"
+            android:theme="@style/Theme.CryptoAssistant.Capsule" />
+
+        <!--
+            无障碍服务：仅在点悬浮球的那一刻读写当前焦点输入框；onAccessibilityEvent 不采集内容。
+            由用户在系统设置里手动授权，应用无法自行开启。
+        -->
+        <service
+            android:name=".service.TextAccessibilityService"
+            android:exported="true"
+            android:label="@string/accessibility_service_label"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/text_accessibility_service" />
+        </service>
+
+        <!--
+            快捷设置磁贴（Android 7.0+）。系统以 BIND_QUICK_SETTINGS_TILE 绑定，
+            因此服务必须 exported，且不需要（也不能）在 <uses-permission> 里声明该权限。
+            磁贴由用户手动添加；Android 13+ 另可在应用内触发系统添加引导。
+        -->
+        <service
+            android:name=".tile.BallTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_tile_ball"
+            android:label="@string/tile_ball_label"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+            <!-- Android 13+：声明为可切换开关，系统按开关语义渲染与播报。 -->
+            <meta-data
+                android:name="android.service.quicksettings.TOGGLEABLE_TILE"
+                android:value="true" />
+        </service>
+
+        <service
+            android:name=".tile.ClipboardTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_tile_clipboard"
+            android:label="@string/tile_clipboard_label"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
+        <service
+            android:name=".tile.QuickModeTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_tile_quick"
+            android:label="@string/tile_quick_label"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+            <!-- Android 13+：声明为可切换开关，系统按开关语义渲染与播报。 -->
+            <meta-data
+                android:name="android.service.quicksettings.TOGGLEABLE_TILE"
+                android:value="true" />
+        </service>
+
+        <service
+            android:name=".overlay.OverlayService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="floating_ball_quick_entry" />
+        </service>
+
+        <!--
+            文件任务结果通过 content:// 分享；只暴露 files/file-tasks/ 子树，
+            并使用 FLAG_GRANT_READ_URI_PERMISSION 临时授权目标应用。
+        -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+    </application>
+
+</manifest>

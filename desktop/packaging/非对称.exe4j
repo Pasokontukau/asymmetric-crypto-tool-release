@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<exe4j version="10.0.1" transformSequenceNumber="3">
+  <directoryPresets config="." />
+  <application name="非对称加密工具" distributionSourceDir="dist" />
+  <executable name="非对称加密工具" wrapperType="embed" iconSet="true" iconFile="非对称加密.ico" executableDir="." executableMode="gui" />
+  <java mainClass="app.AppMain" minVersion="11.0" allowBetaVM="true">
+    <searchSequence>
+      <envVar name="JAVA_HOME\jre" />
+      <directory location="C:/Program Files/Java" />
+      <registry />
+    </searchSequence>
+    <classPath>
+      <archive location="../app.jar" failOnError="false" />
+    </classPath>
+  </java>
+</exe4j>
