@@ -920,6 +920,13 @@ h2 {
   opacity: 0.65;
 }
 
+.limits-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 9px 17px;
+}
+
 .text-link {
   display: inline-flex;
   align-items: center;
@@ -1523,6 +1530,10 @@ h2 {
 
   .limits ul {
     grid-template-columns: 1fr;
+  }
+
+  .limits-links {
+    justify-content: flex-start;
   }
 
   .footer-grid {
