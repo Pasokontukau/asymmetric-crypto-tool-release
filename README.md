@@ -1,5 +1,7 @@
 # 加密助手（Aegix）
 
+**项目主页：<https://pasokontukau.github.io/asymmetric-crypto-tool-release/>**（功能介绍、界面截图与下载入口）
+
 本地离线运行的非对称加密工具：Android 应用（Kotlin + Jetpack Compose）与桌面端 Swing 程序，共用一份纯 Java 加密内核（`shared/crypto-core`）。
 
 所有密钥都在本机生成，文件与文字加解密、签名、分卷全部离线完成。Android 应用不申请网络权限，不含遥测，不上传任何内容。许可证 **GPL-3.0-only**，按开源、侧载方式分发，不上架应用商店。
