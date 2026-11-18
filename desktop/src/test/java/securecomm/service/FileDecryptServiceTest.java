@@ -142,7 +142,7 @@ public class FileDecryptServiceTest {
         } catch (FileDecryptService.ExternalPartsException expected) {
             assertEquals(Integer.valueOf(1), expected.getPartIndex());
             assertEquals(expectedCount, expected.getPartCount());
-            assertTrue(expected.getMessage().contains("分卷合并"));
+            assertTrue(expected.getMessage().contains("批量解密"));
         }
         assertEquals(0, outputDir.listFiles().length);
     }

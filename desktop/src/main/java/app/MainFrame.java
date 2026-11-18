@@ -23,7 +23,6 @@ import securecomm.ui.SecureTextPanel;
 import settings.ui.SettingsPanel;
 import stegano.ui.SteganoPanel;
 import usage.ui.UsagePanel;
-import volumes.ui.ExternalPartMergePanel;
 
 public class MainFrame extends JFrame {
     
@@ -53,7 +52,6 @@ public class MainFrame extends JFrame {
     // 保存UsagePanel实例，以便在字体大小变化时更新样式
     private usage.ui.UsagePanel usagePanel;
     private securecomm.ui.SecureTextPanel secureTextPanel;
-    private volumes.ui.ExternalPartMergePanel externalPartMergePanel;
     
     private void initComponents() {
         // 设置主题颜色
@@ -81,7 +79,6 @@ public class MainFrame extends JFrame {
         keymanagement.ui.KeyPairPanel keyPairPanel = new keymanagement.ui.KeyPairPanel();
         contacts.ui.ContactPanel contactPanel = new contacts.ui.ContactPanel();
         secureTextPanel = new securecomm.ui.SecureTextPanel();
-        externalPartMergePanel = new ExternalPartMergePanel();
         history.ui.HistoryPanel historyPanel = new history.ui.HistoryPanel();
         usagePanel = new usage.ui.UsagePanel();
         settings.ui.SettingsPanel settingsPanel = new settings.ui.SettingsPanel(this);
@@ -91,7 +88,6 @@ public class MainFrame extends JFrame {
         tabbedPane.addTab("密钥对管理", keyPairPanel);
         tabbedPane.addTab("通讯录", contactPanel);
         tabbedPane.addTab("安全通信", secureTextPanel);
-        tabbedPane.addTab("分卷合并", externalPartMergePanel);
         tabbedPane.addTab("历史记录", historyPanel);
         tabbedPane.addTab("使用说明", usagePanel);
         tabbedPane.addTab("设置", settingsPanel);
@@ -107,8 +103,6 @@ public class MainFrame extends JFrame {
                 usagePanel.updateStyleSheet();
             } else if (selected == secureTextPanel) {
                 secureTextPanel.refreshData();
-            } else if (selected == externalPartMergePanel) {
-                externalPartMergePanel.refreshData();
             } else if (selected == historyPanel) {
                 historyPanel.refreshData();
             }

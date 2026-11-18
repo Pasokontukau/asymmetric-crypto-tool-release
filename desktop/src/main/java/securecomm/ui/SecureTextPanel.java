@@ -9,38 +9,25 @@ import contacts.storage.ContactStorage;
 import core.event.PasswordCacheClearListener;
 import core.model.FileInfo;
 import core.model.SignedAndEncryptedData;
-import core.security.MemorySecurityUtils;
 import core.util.FolderZipUtils;
-import core.util.FileOperationErrors;
 import core.util.LogManager;
-import core.util.OperationMonitor;
-import crypto.cipher.Decryptor;
-import crypto.cipher.Encryptor;
-import crypto.file.FileCryptoEngine;
-import crypto.key.KeyPairManager;
 import crypto.key.KeyUtils;
-import crypto.message.SecureMessage;
-import crypto.signature.SignatureManager;
 import securecomm.ui.util.WorkerCallback;
 import history.model.HistoryType;
 import history.model.RecordCategory;
-import history.storage.HistoryStorage;
 import keymanagement.model.KeyPairInfo;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Component;
 import java.awt.Container;
 import java.awt.Desktop;
-import java.awt.Dialog;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
-import java.awt.Frame;
 import java.awt.Toolkit;
 import java.awt.Window;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
-import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.dnd.DnDConstants;
 import java.awt.dnd.DropTarget;
 import java.awt.dnd.DropTargetAdapter;
@@ -48,24 +35,14 @@ import java.awt.dnd.DropTargetDropEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.DefaultListCellRenderer;
@@ -74,14 +51,12 @@ import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
-import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JPasswordField;
 import javax.swing.JPopupMenu;
 import javax.swing.JProgressBar;
 import javax.swing.JScrollPane;
@@ -91,20 +66,13 @@ import javax.swing.JTextArea;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
-import javax.swing.SwingWorker;
 import javax.swing.TransferHandler;
-import keymanagement.storage.KeychainStorage;
 import keymanagement.storage.KeyPairStorage;
-import securecomm.service.FileDecryptService;
 import securecomm.ui.OperationPanel;
 import securecomm.ui.util.DecryptResult;
 import securecomm.ui.util.FileTransferable;
-import securecomm.ui.util.SecureTextFileUtils;
-import securecomm.ui.util.SecureTextProgressUpdate;
 import securecomm.ui.util.SecureTextStringUtils;
-import securecomm.ui.util.SmoothProgressManager;
 import securecomm.ui.util.TempFileManager;
-import volumes.service.ExternalVolumeWriter;
 import settings.manager.SettingsManager;
 import settings.storage.SettingsStorage;
 import stegano.ui.SteganoPanel;
@@ -150,13 +118,21 @@ public class SecureTextPanel extends OperationPanel {
     private JTextArea outputArea;
     private JLabel verifyResultLabel;
     private JProgressBar progressBar;
+    /** 批量任务的取消标记；没有批量任务在跑时为 null。 */
+    private java.util.concurrent.atomic.AtomicBoolean batchCancelled;
+    /** 批量任务的取消按钮，只在任务进行中可见。 */
+    private JButton cancelButton;
 
     // 输入区滚动面板
     private JScrollPane inputScrollPane;
 
     // ============== 文件列表组件声明 ==============
     /** 文件列表 */
-    private java.util.List<java.io.File> selectedFiles = new java.util.ArrayList<>();
+    /** DR-3 3.1：选择模型与规则交给 controller；面板只留界面模型。 */
+    private final securecomm.controller.FileSelectionController fileSelection =
+            new securecomm.controller.FileSelectionController(
+                    this::discardTemporaryArchive,
+                    TempFileManager::isZipFile);
     /** 文件列表组件 */
     private JList<java.io.File> fileListComponent;
     /** 文件列表模型 */
@@ -291,6 +267,10 @@ public class SecureTextPanel extends OperationPanel {
         JPanel progressPanel = new JPanel(new BorderLayout());
         progressPanel.setBackground(ThemeManager.getPanelBackgroundColor());
         progressPanel.add(progressBar, BorderLayout.CENTER);
+
+        cancelButton = createButton("取消", e -> requestBatchCancel());
+        cancelButton.setVisible(false);
+        progressPanel.add(cancelButton, BorderLayout.EAST);
 
         JPanel southPanel = new JPanel(new BorderLayout());
         southPanel.setBackground(ThemeManager.getPanelBackgroundColor());
@@ -501,47 +481,24 @@ public class SecureTextPanel extends OperationPanel {
         fileDetailsBox.removeAll();
 
         int selectedCount = fileListComponent.getSelectedIndices().length;
-        int totalCount = selectedFiles.size();
+        int totalCount = fileSelection.size();
 
         if (selectedCount == 1) {
-            // 闁鑵戞稉鈧稉顏呮瀮娴犺绱濋弰鍓с仛鐠囷妇绮忔穱鈩冧紖
             java.io.File selectedFile = fileListComponent.getSelectedValue();
-            if (selectedFile != null) {
-                String displayName;
-                long displaySize;
-                if (selectedFile.isDirectory()) {
-                    // 閺勵垳娲拌ぐ?
-                    displayName = selectedFile.getName();
-                    displaySize = core.util.FolderZipUtils.calculateFolderSize(selectedFile);
-                } else {
-                    // 閺咁噣鈧碍鏋冩禒?
-                    displayName = selectedFile.getName();
-                    displaySize = selectedFile.length();
-                }
-
-                String sizeStr;
-                if (displaySize < 1024) {
-                    sizeStr = displaySize + " B";
-                } else if (displaySize < 1024 * 1024) {
-                    sizeStr = String.format("%.1f KB", displaySize / 1024.0);
-                } else {
-                    sizeStr = String.format("%.1f MB", displaySize / (1024.0 * 1024.0));
-                }
-
-                // 创建并添加文件名称标签
-                JLabel fileNameLabel = new JLabel("文件: " + displayName);
+            securecomm.controller.FileSelectionController.ItemView view =
+                    fileSelection.describe(selectedFile);
+            if (view != null) {
+                JLabel fileNameLabel = new JLabel("文件: " + view.getDisplayName());
                 fileNameLabel.setFont(AppFonts.getNormalFont());
                 fileNameLabel.setForeground(ThemeManager.getTextColor());
                 fileDetailsBox.add(fileNameLabel);
 
-                // 创建并添加文件大小标签
-                JLabel sizeLabel = new JLabel("大小: " + sizeStr);
+                JLabel sizeLabel = new JLabel("大小: " + view.getSizeText());
                 sizeLabel.setFont(AppFonts.getNormalFont());
                 sizeLabel.setForeground(ThemeManager.getTextColor());
                 fileDetailsBox.add(sizeLabel);
 
-                // 创建并添加文件路径标签
-                JLabel pathLabel = new JLabel("路径: " + selectedFile.getParentFile().getAbsolutePath());
+                JLabel pathLabel = new JLabel("路径: " + view.getPath());
                 pathLabel.setFont(AppFonts.getNormalFont());
                 pathLabel.setForeground(ThemeManager.getTextColor());
                 fileDetailsBox.add(pathLabel);
@@ -568,7 +525,7 @@ public class SecureTextPanel extends OperationPanel {
         if (packageMultiFilesCheckBox == null) {
             return;
         }
-        boolean eligible = canPackageSelectedFiles();
+        boolean eligible = fileSelection.canPackage();
         if (eligible && !packageChoiceWasEligible) {
             packageMultiFilesCheckBox.setSelected(SettingsStorage.isPackageMultiFilesDefault());
         } else if (!eligible) {
@@ -578,192 +535,51 @@ public class SecureTextPanel extends OperationPanel {
         packageMultiFilesCheckBox.setEnabled(eligible);
     }
 
-    private boolean canPackageSelectedFiles() {
-        int plainFiles = 0;
-        for (java.io.File file : selectedFiles) {
-            if (file.isDirectory() || TempFileManager.isZipFile(file)) {
-                return false;
-            }
-            if (file.isFile()) {
-                plainFiles++;
-            }
-        }
-        return plainFiles >= 2;
-    }
-
     // ========== 文件处理 Worker ==========
-    private class AddFilesWorker extends SwingWorker<java.util.List<Object>, Object[]> {
-        private final java.util.List<java.io.File> normalFiles;
-        private final java.util.List<java.io.File> foldersToZip;
-        private SmoothProgressManager smoothProgress;
-
-        public AddFilesWorker(java.util.List<java.io.File> normalFiles, java.util.List<java.io.File> foldersToZip) {
-            this.normalFiles = normalFiles;
-            this.foldersToZip = foldersToZip;
+    /** DR-2：添加文件 Worker 的界面动作，全部委托回面板现有方法，行为不变。 */
+    private class PanelAddFilesHost implements securecomm.ui.worker.AddFilesHost {
+        @Override
+        public boolean isAlreadySelected(java.io.File file) {
+            return fileSelection.contains(file);
         }
 
         @Override
-        protected java.util.List<Object> doInBackground() throws Exception {
-            smoothProgress = new SmoothProgressManager(progressBar);
-            java.util.List<Object> processedFiles = new java.util.ArrayList<>();
-            int totalFiles = normalFiles.size() + foldersToZip.size();
-            int currentFileIndex = 0;
-
-            // 1. 处理普通文件（可能分割+哈希）
-            for (java.io.File file : normalFiles) {
-                currentFileIndex++;
-                final int finalCurrentFileIndex = currentFileIndex;
-                final int finalTotalFiles = totalFiles;
-                final String fileName = file.getName();
-                long fileSize = file.length();
-                publish(new Object[]{"start_file", fileName, finalCurrentFileIndex, finalTotalFiles});
-                try {
-                    if (!selectedFiles.contains(file)) {
-                        processedFiles.add(file);
-                        publish(new Object[]{"complete_file", fileName, finalCurrentFileIndex, finalTotalFiles, finalCurrentFileIndex * 100 / finalTotalFiles});
-                    }
-                } catch (Exception e) {
-                    LogManager.error("add-file failed | bytes=" + file.length(), e);
-                    publish(new Object[]{"error", fileName, e.getMessage()});
-                }
-            }
-
-            // 2. 处理需要压缩的文件夹
-            for (int i = 0; i < foldersToZip.size(); i++) {
-                currentFileIndex++;
-                final int finalCurrentFileIndex = currentFileIndex;
-                final int finalTotalFiles = totalFiles;
-                java.io.File folder = foldersToZip.get(i);
-                final String folderName = folder.getName();
-                publish(new Object[]{"start_folder", folderName, finalCurrentFileIndex, finalTotalFiles});
-                java.io.File tempZipFile = null;
-                try {
-                    String tempDir = System.getProperty("java.io.tmpdir");
-                    tempZipFile = java.io.File.createTempFile("aegix-folder-", ".zip", new java.io.File(tempDir));
-                    tempZipFile.deleteOnExit();
-                    core.util.FolderZipUtils.zipFolder(folder, tempZipFile, (current, total, item) -> {
-                        int folderProgress = (total > 0) ? (current * 100 / total) : 0;
-                        int overallStep = (finalCurrentFileIndex - 1) * 100 / finalTotalFiles;
-                        int fileProgress = folderProgress / finalTotalFiles;
-                        publish(new Object[]{"progress_folder", folderName, finalCurrentFileIndex, finalTotalFiles, overallStep + fileProgress, item, current, total});
-                    });
-                    TempFileManager.registerFolderZip(tempZipFile, folderName);
-                    processedFiles.add(tempZipFile);
-                    tempZipFile = null;
-                    publish(new Object[]{"complete_file", folderName + ".zip", finalCurrentFileIndex, finalTotalFiles, finalCurrentFileIndex * 100 / finalTotalFiles});
-                } catch (Exception e) {
-                    if (tempZipFile != null) {
-                        core.util.FolderZipUtils.safeDelete(tempZipFile);
-                    }
-                    LogManager.error("add-folder failed", e);
-                    publish(new Object[]{"error", folder.getName(), FileOperationErrors.userMessage(e)});
-                }
-            }
-            return processedFiles;
-        }
-
-        @Override
-        protected void process(java.util.List<Object[]> chunks) {
-            for (Object[] chunk : chunks) {
-                String type = (String) chunk[0];
-                switch (type) {
-                    case "start_file":
-                        String fileName = (String) chunk[1];
-                        int idx = (Integer) chunk[2];
-                        int total = (Integer) chunk[3];
-                        smoothProgress.setTargetProgress((idx - 1) * 100 / total, "正在处理文件 [" + idx + "/" + total + "]: " + fileName);
-                        verifyResultLabel.setText("正在进行分卷处理中...");
-                        verifyResultLabel.setForeground(ThemeManager.getTextColor());
-                        break;
-                    case "start_folder":
-                        String folderName = (String) chunk[1];
-                        int fIdx = (Integer) chunk[2];
-                        int fTotal = (Integer) chunk[3];
-                        smoothProgress.setTargetProgress((fIdx - 1) * 100 / fTotal, "正在处理文件夹 [" + fIdx + "/" + fTotal + "]: " + folderName);
-                        verifyResultLabel.setText("正在进行分卷处理中...");
-                        verifyResultLabel.setForeground(ThemeManager.getTextColor());
-                        break;
-                    case "progress_folder":
-                        String folderProgressName = (String) chunk[1];
-                        int fpIdx = (Integer) chunk[2];
-                        int fpTotal = (Integer) chunk[3];
-                        int fpProgress = (Integer) chunk[4];
-                        String itemName = (String) chunk[5];
-                        smoothProgress.setTargetProgress(fpProgress, "正在处理文件夹项目 [" + fpIdx + "/" + fpTotal + "]: " + folderProgressName + " - " + itemName);
-                        break;
-                    case "complete_file":
-                        String completeFile = (String) chunk[1];
-                        int compIdx = (Integer) chunk[2];
-                        int compTotal = (Integer) chunk[3];
-                        int compProgress = (Integer) chunk[4];
-                        smoothProgress.setTargetProgress(compProgress, "文件处理完成 [" + compIdx + "/" + compTotal + "]: " + completeFile);
-                        break;
-                    case "error":
-                        String errFile = (String) chunk[1];
-                        String errMsg = (String) chunk[2];
-                        verifyResultLabel.setText("文件处理失败: " + errFile + " - " + errMsg);
-                        verifyResultLabel.setForeground(UIConstants.ERROR_TEXT_COLOR);
-                        break;
-                }
+        public void addSelectedFile(java.io.File file) {
+            if (fileSelection.add(file)) {
+                fileListModel.addElement(file);
             }
         }
 
         @Override
-        protected void done() {
-            if (smoothProgress != null) {
-                smoothProgress.stop();
+        public void showStatus(String text, boolean error) {
+            verifyResultLabel.setText(text);
+            verifyResultLabel.setForeground(error
+                    ? UIConstants.ERROR_TEXT_COLOR
+                    : ThemeManager.getTextColor());
+        }
+
+        @Override
+        public void finishAdd(int addedCount) {
+            if (addedCount > 0) {
+                cardLayout.show(centerPanel, "FILE_MODE");
+                updateFileDetails();
+                verifyResultLabel.setText("成功添加" + addedCount + "个文件");
+                verifyResultLabel.setForeground(UIConstants.SUCCESS_TEXT_COLOR);
+                progressBar.setValue(100);
+                progressBar.setString("文件处理完成");
             }
-            try {
-                java.util.List<Object> processedFiles = get();
-                int addedCount = 0;
-                for (Object processedObj : processedFiles) {
-                    if (processedObj instanceof java.io.File) {
-                        java.io.File file = (java.io.File) processedObj;
-                        if (!selectedFiles.contains(file)) {
-                            selectedFiles.add(file);
-                            fileListModel.addElement(file);
-                            addedCount++;
-                        }
-                    }
-                }
-                if (addedCount > 0) {
-                    cardLayout.show(centerPanel, "FILE_MODE");
-                    updateFileDetails();
-                    verifyResultLabel.setText("成功添加" + addedCount + "个文件");
-                    verifyResultLabel.setForeground(UIConstants.SUCCESS_TEXT_COLOR);
-                    progressBar.setValue(100);
-                    progressBar.setString("文件处理完成");
-                }
-                updateSaveButtonState();
-            } catch (Exception e) {
-                LogManager.error("文件处理失败", e);
-                verifyResultLabel.setText("文件处理失败: " + FileOperationErrors.userMessage(e));
-                verifyResultLabel.setForeground(UIConstants.ERROR_TEXT_COLOR);
-            }
+            updateSaveButtonState();
         }
     }
 
     /**
-     * 濞ｈ濮為弬鍥︽閸掔増鏋冩禒璺哄灙鐞涱煉绱欓懛顏勫З婢跺嫮鎮婇弬鍥︽婢剁櫢绱?
+     * 把外部传入的文件/文件夹加入输入列表：普通文件直接加入，文件夹先打成临时 ZIP。
      */
     private void addFilesToFileList(java.io.File[] files) {
-        // 閸忓牊鏁归梿鍡涙付鐟曚礁顦╅悶鍡欐畱妞ゅ湱娲伴敍灞藉瀻缁傜粯娅橀柅姘瀮娴犺泛鎷伴弬鍥︽婢?
-        java.util.List<java.io.File> normalFiles = new java.util.ArrayList<>();
-        java.util.List<java.io.File> foldersToZip = new java.util.ArrayList<>();
-
-        for (java.io.File file : files) {
-            if (!file.exists()) {
-                continue;
-            }
-            if (file.isDirectory()) {
-                foldersToZip.add(file);
-            } else {
-                normalFiles.add(file);
-            }
-        }
-
-        // 娴ｈ法鏁?SwingWorker 閸氬骸褰存径鍕倞閹碘偓閺堝鏋冩禒璁圭礄閺咁噣鈧碍鏋冩禒?+ 閺傚洣娆㈡径鐧哥礆
-        new AddFilesWorker(normalFiles, foldersToZip).execute();
+        // 判型与缺失过滤在 controller；文件夹仍由 Worker 打成临时 ZIP。
+        securecomm.controller.FileSelectionController.AddPlan plan = fileSelection.planAdd(files);
+        new securecomm.ui.worker.AddFilesWorker(
+                new PanelAddFilesHost(), progressBar, plan.getPlainFiles(), plan.getFolders()).execute();
     }
 
 
@@ -772,30 +588,32 @@ public class SecureTextPanel extends OperationPanel {
      * 从文件列表移除选中的文件
      */
     private void removeSelectedFiles() {
-        int[] selectedIndices = fileListComponent.getSelectedIndices();
-        // 从后向前删除，避免索引变化导致删除出错
-        for (int i = selectedIndices.length - 1; i >= 0; i--) {
-            int index = selectedIndices[i];
-            java.io.File file = fileListModel.getElementAt(index);
-            selectedFiles.remove(file);
-            fileListModel.removeElementAt(index);
-
-            // ========== 如果删除的是临时分卷/压缩文件，尝试清理临时文件 ==========
-
-            // 清理添加文件夹时生成的临时 ZIP
-            if (TempFileManager.isZipFile(file)) {
-                TempFileManager.unregisterZipFile(file);
-                core.util.FolderZipUtils.safeDelete(file);
-            }
-        }
+        fileSelection.removeByIndices(fileListComponent.getSelectedIndices());
+        refreshFileListModel();
 
         updatePackageChoiceState();
 
         // 如果列表为空，切换回文本模式；否则更新文件列表提示文字
-        if (selectedFiles.isEmpty()) {
+        if (fileSelection.isEmpty()) {
             setTextMode();
         } else {
             updateFileListHint();
+        }
+    }
+
+    /** 临时归档被移出选择时的清理；由 controller 回调。 */
+    private void discardTemporaryArchive(java.io.File file) {
+        if (TempFileManager.isZipFile(file)) {
+            TempFileManager.unregisterZipFile(file);
+            core.util.FolderZipUtils.safeDelete(file);
+        }
+    }
+
+    /** 界面模型与 controller 对齐（删除/批量收尾后用）。 */
+    private void refreshFileListModel() {
+        fileListModel.clear();
+        for (java.io.File file : fileSelection.files()) {
+            fileListModel.addElement(file);
         }
     }
 
@@ -804,9 +622,9 @@ public class SecureTextPanel extends OperationPanel {
      */
     private void updateFileListHint() {
         String volumeLimit = SettingsStorage.getVolumeLimitPreset().getLabel();
-        inputArea.setText("已选择 " + selectedFiles.size() + " 个文件\n"
+        inputArea.setText("已选择 " + fileSelection.size() + " 个文件\n"
                 + "加密按钮用于加密；解密支持 .aegix 单文件与单卷外部包\n"
-                + "多卷外部包请到「分卷合并」页选择全部卷\n"
+                + securecomm.service.PartSetPromptText.volumeSelectionHint() + "\n"
                 + "超过当前分卷大小（" + volumeLimit + "/卷）会自动拆成多卷，请把全部分卷一起发送；可在「设置 → 文件处理」修改");
     }
 
@@ -1378,7 +1196,7 @@ public class SecureTextPanel extends OperationPanel {
     // 切换回文本模式的方法
     private void setTextMode() {
         // 清空输入文件列表
-        selectedFiles.clear();
+        fileSelection.clear();
         if (fileListModel != null) {
             fileListModel.clear();
         }
@@ -1603,7 +1421,7 @@ public class SecureTextPanel extends OperationPanel {
     private void encryptAndSign() {
         try {
             // ========== 检查是否为文件加密模式 ==========
-            if (!selectedFiles.isEmpty()) {
+            if (!fileSelection.isEmpty()) {
                 encryptMultipleFiles();
                 return;
             }
@@ -1714,7 +1532,7 @@ public class SecureTextPanel extends OperationPanel {
     private void decryptAndVerify() {
         try {
             // ========== 检查是否为文件解密模式 ==========
-            if (!selectedFiles.isEmpty()) {
+            if (!fileSelection.isEmpty()) {
                 decryptMultipleFiles();
                 return;
             }
@@ -1992,17 +1810,7 @@ public class SecureTextPanel extends OperationPanel {
                 "加密后"
             );
             fileInfo.setSignatureValid(true);
-            outputFilesList.add(fileInfo);
-            outputFileListModel.addElement(fileInfo);
-
-            // 更新文件详情显示
-            updateOutputFileDetails();
-
-            // 切换到文件模式显示
-            outputCardLayout.show(outputCenterPanel, "FILE_MODE");
-
-            // 更新保存按钮状态
-            updateSaveButtonState();
+            displayOutputFiles(java.util.Collections.singletonList(fileInfo));
 
             verifyResultLabel.setText("文件保存成功");
             verifyResultLabel.setForeground(UIConstants.SUCCESS_TEXT_COLOR);
@@ -2040,7 +1848,7 @@ public class SecureTextPanel extends OperationPanel {
         // 刷新对方公钥下拉框（联系人+测试模式的密钥对）
         loadAllPublicKeys(otherPublicKeyCombo);
         // 分卷大小可能在设置页被改过，文件列表提示跟着更新。
-        if (!selectedFiles.isEmpty()) {
+        if (!fileSelection.isEmpty()) {
             updateFileListHint();
         }
     }
@@ -2073,367 +1881,83 @@ public class SecureTextPanel extends OperationPanel {
         }
     }
 
-    private class EncryptFilesWorker extends SwingWorker<List<FileInfo>, SecureTextProgressUpdate> {
-        private List<java.io.File> filesToEncrypt;
-        private String myKeyPairName;
-        private String otherKeySelection;
-        private long startTime;
-        private boolean skipEncFiles;
-        private boolean packageFiles;
-        private final String archiveRootName;
-        private final int originalFileCount;
-        private int successCount = 0;
-        private int failCount = 0;
-        private String firstErrorMessage;
-        private List<FileInfo> outputFiles = new java.util.ArrayList<>();
-        private java.io.File outputDirectory;
-        private List<FileInfo> inputFilesRecord = new java.util.ArrayList<>();
-        private List<FileInfo> outputFilesRecord = new java.util.ArrayList<>();
-        private SmoothProgressManager smoothProgress;
+    /** DR-2 复看：批量加/解密的界面收尾合并成一份，方向与历史标题由构造参数区分。 */
+    private class PanelBatchHost
+            implements securecomm.ui.worker.EncryptBatchHost, securecomm.ui.worker.DecryptBatchHost {
+        private final HistoryType historyType;
+        private final String historyTitle;
 
-        EncryptFilesWorker(
-                List<java.io.File> filesToEncrypt,
-                String myKeyPairName,
-                String otherKeySelection,
-                long startTime,
-                boolean skipEncFiles,
-                boolean packageFiles,
-                String archiveRootName
-        ) {
-            this.filesToEncrypt = filesToEncrypt;
-            this.myKeyPairName = myKeyPairName;
-            this.otherKeySelection = otherKeySelection;
-            this.startTime = startTime;
-            this.skipEncFiles = skipEncFiles;
-            this.packageFiles = packageFiles;
-            this.archiveRootName = archiveRootName;
-            this.originalFileCount = filesToEncrypt.size();
+        PanelBatchHost(HistoryType historyType, String historyTitle) {
+            this.historyType = historyType;
+            this.historyTitle = historyTitle;
         }
 
         @Override
-        protected List<FileInfo> doInBackground() throws Exception {
-            smoothProgress = new SmoothProgressManager(progressBar);
-
-            publish(new SecureTextProgressUpdate(3, "正在初始化..."));
-
-            String outputDir = settings.manager.SettingsManager.getDefaultOutputDirectory();
-            if (outputDir == null || outputDir.isEmpty()) {
-                outputDirectory = filesToEncrypt.get(0).getParentFile();
-            } else {
-                outputDirectory = new java.io.File(outputDir);
-            }
-            if (!outputDirectory.exists()) {
-                outputDirectory.mkdirs();
-            }
-
-            PrivateKey myPrivateKey = crypto.key.PrivateKeyAccessService.getPrivateKey(myKeyPairName);
-            if (myPrivateKey == null) {
-                return null;
-            }
-            publish(new SecureTextProgressUpdate(20, "已加载私钥..."));
-
-            publish(new SecureTextProgressUpdate(20, "正在加载公钥..."));
-            PublicKey otherPublicKey = loadPublicKeyFromSelection(otherKeySelection);
-            long volumeLimitBytes = SettingsStorage.getVolumeLimitBytes();
-
-            File packagedZip = null;
-            try {
-                if (packageFiles) {
-                    List<java.io.File> members = new java.util.ArrayList<>();
-                    for (java.io.File file : filesToEncrypt) {
-                        if (skipEncFiles
-                                && file.getName().toLowerCase().endsWith(".aegix")) {
-                            continue;
-                        }
-                        members.add(file);
-                    }
-                    if (members.size() >= 2) {
-                        File tempZip = File.createTempFile(
-                                "aegix-archive-",
-                                ".zip",
-                                new File(System.getProperty("java.io.tmpdir")));
-                        tempZip.deleteOnExit();
-                        packagedZip = tempZip;
-                        publish(new SecureTextProgressUpdate(10, "正在打包多个文件..."));
-                        FolderZipUtils.zipFiles(members, tempZip, archiveRootName, null);
-                        TempFileManager.registerArchiveZip(tempZip, archiveRootName + ".zip");
-                        filesToEncrypt = java.util.Collections.singletonList(tempZip);
-                    }
-                }
-
-                int total = filesToEncrypt.size();
-                for (int i = 0; i < total; i++) {
-                java.io.File inputFile = filesToEncrypt.get(i);
-
-                try {
-                    if (skipEncFiles && inputFile.getName().toLowerCase().endsWith(".aegix")) {
-                        continue;
-                    }
-
-                    {
-                        String originalFileName = inputFile.getName();
-                        String archiveZipName = TempFileManager.getArchiveName(inputFile);
-                        boolean isArchiveZip = archiveZipName != null;
-                        boolean isFolderZip = TempFileManager.isFolderZip(inputFile);
-                        String folderName = null;
-
-                        if (isFolderZip) {
-                            folderName = folderNameForZip(inputFile);
-                            originalFileName = folderName + ".folder";
-                        } else if (isArchiveZip) {
-                            originalFileName = archiveZipName;
-                        }
-
-                        String timeStamp = java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
-                        // 与 Android 一致：首个文件不带序号，只有同一秒内重名才追加 _2、_3。
-                        String baseName = "secure_file_" + timeStamp;
-
-                        if (inputFile.length() > volumeLimitBytes) {
-                            String archiveName = isFolderZip
-                                    ? (folderName + ".zip")
-                                    : (isArchiveZip ? archiveZipName : inputFile.getName());
-                            boolean sourceIsZip = isFolderZip || isArchiveZip;
-                            List<java.io.File> parts = ExternalVolumeWriter.write(
-                                    inputFile,
-                                    sourceIsZip,
-                                    archiveName,
-                                    isFolderZip,
-                                    null,
-                                    outputDirectory,
-                                    baseName,
-                                    myPrivateKey,
-                                    otherPublicKey,
-                                    volumeLimitBytes,
-                                    null
-                            );
-                            int partCount = parts.size();
-
-                            FileInfo inFileInfo = new FileInfo(
-                                isFolderZip
-                                        ? (folderName + ".zip")
-                                        : (isArchiveZip ? archiveZipName : inputFile.getName()),
-                                inputFile.getAbsolutePath(),
-                                inputFile.length(),
-                                "成功"
-                            );
-                            inFileInfo.setOriginalFileName(isFolderZip
-                                    ? folderName
-                                    : (isArchiveZip ? archiveZipName : inputFile.getName()));
-                            inFileInfo.setIsFolder(isFolderZip);
-                            inFileInfo.setIsSplit(partCount > 1);
-                            inFileInfo.setVolumeCount(partCount);
-                            inputFilesRecord.add(inFileInfo);
-
-                            for (int partIndex = 0; partIndex < parts.size(); partIndex++) {
-                                java.io.File part = parts.get(partIndex);
-                                FileInfo outFileInfo = new FileInfo(
-                                    part.getName(),
-                                    part.getAbsolutePath(),
-                                    part.length(),
-                                    "成功"
-                                );
-                                outFileInfo.setOriginalFileName(archiveName);
-                                outFileInfo.setSignatureValid(true);
-                                outFileInfo.setIsSplit(partCount > 1);
-                                outFileInfo.setVolumeCount(partCount);
-                                outFileInfo.setCurrentVolume(partIndex + 1);
-                                outputFilesRecord.add(outFileInfo);
-                                outputFiles.add(outFileInfo);
-                            }
-                            successCount++;
-                        } else {
-                            String outputFileName = securecomm.ui.util.EncryptedFileNaming
-                                    .uniqueName(outputDirectory, baseName);
-                            final String headerOriginalFileName = originalFileName;
-                            java.io.File outputFile = securecomm.ui.util.AtomicFileOutput.write(
-                                    outputDirectory,
-                                    outputFileName,
-                                    encryptedOutput -> {
-                                        try (java.io.InputStream signatureInput = new java.io.BufferedInputStream(
-                                                     new java.io.FileInputStream(inputFile));
-                                             java.io.InputStream plaintextInput = new java.io.BufferedInputStream(
-                                                     new java.io.FileInputStream(inputFile))) {
-                                            FileCryptoEngine.encrypt(
-                                                    signatureInput,
-                                                    plaintextInput,
-                                                    inputFile.length(),
-                                                    headerOriginalFileName,
-                                                    myPrivateKey,
-                                                    otherPublicKey,
-                                                    encryptedOutput,
-                                                    null,
-                                                    new java.util.concurrent.atomic.AtomicBoolean(false)
-                                            );
-                                        }
-                                    });
-
-                            FileInfo inFileInfo = new FileInfo(
-                                isFolderZip
-                                        ? (folderName + ".zip")
-                                        : (isArchiveZip ? archiveZipName : inputFile.getName()),
-                                inputFile.getAbsolutePath(),
-                                inputFile.length(),
-                                "成功"
-                            );
-                            inFileInfo.setOriginalFileName(isFolderZip
-                                    ? folderName
-                                    : (isArchiveZip ? archiveZipName : inputFile.getName()));
-                            inFileInfo.setIsFolder(isFolderZip);
-
-                            FileInfo outFileInfo = new FileInfo(
-                                outputFile.getName(),
-                                outputFile.getAbsolutePath(),
-                                outputFile.length(),
-                                "成功"
-                            );
-                            outFileInfo.setOriginalFileName(originalFileName);
-                            outFileInfo.setSignatureValid(true);
-
-                            inputFilesRecord.add(inFileInfo);
-                            outputFilesRecord.add(outFileInfo);
-
-                            outputFiles.add(outFileInfo);
-                            successCount++;
-                        }
-                    }
-
-                } catch (Exception e) {
-                    LogManager.error("encrypt-file failed | bytes=" + inputFile.length(), e);
-                    failCount++;
-                    String errorMessage = FileOperationErrors.userMessage(e);
-                    if (firstErrorMessage == null) {
-                        firstErrorMessage = errorMessage;
-                    }
-                    FileInfo inFileInfo = new FileInfo(
-                        inputFile.getName(),
-                        inputFile.getAbsolutePath(),
-                        inputFile.length(),
-                        "失败",
-                        errorMessage
-                    );
-                    inputFilesRecord.add(inFileInfo);
-                }
-
-                int baseProgress = 20;
-                int progressPerFile = 75 / total;
-                int progress = baseProgress + (i + 1) * progressPerFile;
-                String fileName = inputFile.getName();
-                if (fileName.length() > 20) {
-                    fileName = fileName.substring(0, 17) + "...";
-                }
-                publish(new SecureTextProgressUpdate(progress, "正在处理: " + fileName));
-            }
-
-                publish(new SecureTextProgressUpdate(100, "完成！"));
-                return outputFiles;
-            } finally {
-                if (packagedZip != null) {
-                    TempFileManager.unregisterZipFile(packagedZip);
-                    FolderZipUtils.safeDelete(packagedZip);
-                }
-            }
+        public PublicKey loadPublicKey(String selection) throws Exception {
+            return loadPublicKeyFromSelection(selection);
         }
 
         @Override
-        protected void process(List<SecureTextProgressUpdate> chunks) {
-            for (SecureTextProgressUpdate update : chunks) {
-                if (smoothProgress != null) {
-                    if (update.progress == 100) {
-                        smoothProgress.setImmediateProgress(100, update.stepText);
-                    } else {
-                        smoothProgress.setTargetProgress(update.progress, update.stepText);
-                    }
-                } else {
-                    progressBar.setValue(update.progress);
-                    progressBar.setString(update.stepText);
-                }
-            }
+        public List<PublicKey> resolveSenderCandidates(String selection) throws Exception {
+            loadPublicKeyFromSelection(selection);
+            return loadSenderCandidates();
         }
 
         @Override
-        protected void done() {
-            if (smoothProgress != null) {
-                smoothProgress.stop();
-            }
-            try {
-                get();
+        public void showOutputs(List<FileInfo> outputs) {
+            displayOutputFiles(outputs);
+        }
 
-                outputFilesList.clear();
-                outputFileListModel.clear();
+        @Override
+        public void showResult(String text, boolean error) {
+            verifyResultLabel.setText(text);
+            verifyResultLabel.setForeground(error
+                    ? UIConstants.ERROR_TEXT_COLOR
+                    : UIConstants.SUCCESS_TEXT_COLOR);
+        }
 
-                for (FileInfo fileInfo : outputFiles) {
-                    outputFilesList.add(fileInfo);
-                    outputFileListModel.addElement(fileInfo);
-                }
+        @Override
+        public void recordHistory(
+                String contactName,
+                String resultText,
+                int fileCount,
+                List<FileInfo> inputRecords,
+                List<FileInfo> outputRecords,
+                String keyPairName,
+                long elapsedMs) {
+            addHistoryRecordEnhanced(
+                    historyType,
+                    contactName,
+                    RecordCategory.BATCH,
+                    historyTitle + fileCount + " 个文件",
+                    true,
+                    resultText,
+                    null,
+                    null,
+                    inputRecords,
+                    null,
+                    outputRecords,
+                    keyPairName,
+                    elapsedMs);
+        }
 
-                updateOutputFileDetails();
+        @Override
+        public String contactNameOrNull(String selection) {
+            return isContactSelection(selection) ? getContactNameFromSelection(selection) : null;
+        }
 
-                outputCardLayout.show(outputCenterPanel, "FILE_MODE");
+        @Override
+        public void batchFinished() {
+            endBatchRun();
+        }
 
-                updateSaveButtonState();
+        @Override
+        public void afterBatch() {
+            fileSelection.removeTemporaryArchives();
+            refreshFileListModel();
 
-                progressBar.setString("批量加密完成！");
-
-                String resultText;
-                if (failCount == 0) {
-                    resultText = "成功 " + successCount;
-                } else if (successCount == 0) {
-                    resultText = "失败 " + failCount;
-                } else {
-                    resultText = "成功 " + successCount + "，失败 " + failCount;
-                }
-
-                if (successCount == 0 && failCount > 0) {
-                    verifyResultLabel.setText("批量加密失败！"
-                            + (firstErrorMessage == null ? "" : firstErrorMessage));
-                } else {
-                    verifyResultLabel.setText("批量加密完成！" + resultText);
-                }
-                verifyResultLabel.setForeground(failCount > 0
-                        ? UIConstants.ERROR_TEXT_COLOR
-                        : UIConstants.SUCCESS_TEXT_COLOR);
-
-                String contactName = null;
-                if (isContactSelection(otherKeySelection)) {
-                    contactName = getContactNameFromSelection(otherKeySelection);
-                }
-
-                addHistoryRecordEnhanced(
-                        history.model.HistoryType.ENCRYPT,
-                        contactName,
-                        history.model.RecordCategory.BATCH,
-                        "批量加密 " + originalFileCount + " 个文件",
-                        true,
-                        resultText,
-                        null,
-                        null,
-                        inputFilesRecord,
-                        null,
-                        outputFilesRecord,
-                        myKeyPairName,
-                        System.currentTimeMillis() - startTime
-                );
-
-            } catch (Exception ex) {
-                verifyResultLabel.setText("批量加密失败：" + FileOperationErrors.userMessage(ex));
-                verifyResultLabel.setForeground(UIConstants.ERROR_TEXT_COLOR);
-                progressBar.setString("批量加密失败！");
-                LogManager.error("批量加密失败", ex);
-            } finally {
-                for (int i = selectedFiles.size() - 1; i >= 0; i--) {
-                    java.io.File file = selectedFiles.get(i);
-                    if (TempFileManager.isZipFile(file)) {
-                        TempFileManager.unregisterZipFile(file);
-                        core.util.FolderZipUtils.safeDelete(file);
-                        selectedFiles.remove(i);
-                        fileListModel.removeElementAt(i);
-                    }
-                }
-
-
-                updateFileDetails();
-                updateSaveButtonState();
-            }
+            updateFileDetails();
+            updateSaveButtonState();
         }
     }
 
@@ -2451,10 +1975,10 @@ public class SecureTextPanel extends OperationPanel {
                 return;
             }
 
-            // ========== 閺傛澘顤冮敍姘梾濞?enc閺傚洣娆㈤獮鑸靛絹缁€?==========
+            // ========== 检测到已加密文件，确认是否跳过 ==========
             List<java.io.File> encFiles = new java.util.ArrayList<>();
-            for (java.io.File file : selectedFiles) {
-                if (file.getName().toLowerCase().endsWith(".aegix")) {
+            for (java.io.File file : fileSelection.files()) {
+                if (securecomm.service.FileTypeClassifier.isEncryptedFileName(file.getName())) {
                     encFiles.add(file);
                 }
             }
@@ -2479,20 +2003,20 @@ public class SecureTextPanel extends OperationPanel {
 
             boolean packageFiles = packageMultiFilesCheckBox != null
                     && packageMultiFilesCheckBox.isSelected()
-                    && canPackageSelectedFiles();
+                    && fileSelection.canPackage();
             if (packageFiles) {
                 int candidates = 0;
-                for (java.io.File file : selectedFiles) {
+                for (java.io.File file : fileSelection.files()) {
                     if (!(skipEncFiles
-                            && file.getName().toLowerCase().endsWith(".aegix"))) {
+                            && securecomm.service.FileTypeClassifier.isEncryptedFileName(file.getName()))) {
                         candidates++;
                     }
                 }
                 packageFiles = candidates >= 2;
             }
-            String archiveRootName = newArchiveRootName();
+            String archiveRootName = securecomm.service.ArchiveNaming.newArchiveRootName();
             if (!confirmVolumePreview(
-                    selectedFiles, skipEncFiles, otherKeySelection, packageFiles, archiveRootName)) {
+                    fileSelection.files(), skipEncFiles, otherKeySelection, packageFiles, archiveRootName)) {
                 return;
             }
 
@@ -2502,11 +2026,13 @@ public class SecureTextPanel extends OperationPanel {
 
             final String myKeyPairNameFinal = myKeyPairName;
             final String otherKeySelectionFinal = otherKeySelection;
-            final List<java.io.File> filesToEncrypt = new java.util.ArrayList<>(selectedFiles);
+            final List<java.io.File> filesToEncrypt = new java.util.ArrayList<>(fileSelection.files());
             final boolean finalSkipEncFiles = skipEncFiles;
             final long startTime = System.currentTimeMillis();
 
-            new EncryptFilesWorker(
+            new securecomm.ui.worker.EncryptFilesWorker(
+                    new PanelBatchHost(HistoryType.ENCRYPT, "批量加密 "),
+                    progressBar,
                     filesToEncrypt,
                     myKeyPairNameFinal,
                     otherKeySelectionFinal,
@@ -2533,7 +2059,6 @@ public class SecureTextPanel extends OperationPanel {
             boolean packageFiles,
             String archiveRootName
     ) {
-        long volumeLimitBytes = SettingsStorage.getVolumeLimitBytes();
         PublicKey recipientKey;
         try {
             recipientKey = loadPublicKeyFromSelection(otherKeySelection);
@@ -2542,83 +2067,41 @@ public class SecureTextPanel extends OperationPanel {
             return false;
         }
 
-        List<String> lines = new ArrayList<>();
-        int totalParts = 0;
-        if (packageFiles) {
-            long sourceBytes = 0L;
-            int count = 0;
-            for (File file : files) {
-                if (skipEncFiles
-                        && file.getName().toLowerCase(java.util.Locale.ROOT).endsWith(".aegix")) {
-                    continue;
-                }
-                sourceBytes += file.length();
-                count++;
-            }
-            try {
-                int partCount = ExternalVolumeWriter.previewPartCountForBytes(
-                        sourceBytes,
-                        count,
-                        true,
-                        archiveRootName + ".zip",
-                        recipientKey,
-                        volumeLimitBytes);
-                if (partCount > 1) {
-                    lines.add(count + " 个文件（打包） → 预计 " + partCount + " 卷");
-                    totalParts += partCount;
-                }
-            } catch (Exception error) {
-                showError("无法计算分卷：" + error.getMessage());
-                return false;
-            }
-        }
-        for (File file : packageFiles ? java.util.Collections.<File>emptyList() : files) {
-            String lowerName = file.getName().toLowerCase(java.util.Locale.ROOT);
-            if (skipEncFiles && lowerName.endsWith(".aegix")) {
-                continue;
-            }
-            if (file.length() <= volumeLimitBytes) {
-                continue;
-            }
+        securecomm.service.VolumePreviewPlanner.Plan plan;
+        try {
+            plan = securecomm.service.VolumePreviewPlanner.plan(
+                    files,
+                    skipEncFiles,
+                    packageFiles,
+                    archiveRootName,
+                    recipientKey,
+                    SettingsStorage.getVolumeLimitBytes(),
+                    new securecomm.service.VolumePreviewPlanner.ArchiveLookup() {
+                        @Override
+                        public boolean isFolderZip(File file) {
+                            return TempFileManager.isFolderZip(file);
+                        }
 
-            boolean isFolderZip = TempFileManager.isFolderZip(file);
-            String registeredArchive = TempFileManager.getArchiveName(file);
-            boolean sourceIsZip = isFolderZip || registeredArchive != null;
-            String archiveName = isFolderZip
-                    ? folderNameForZip(file) + ".zip"
-                    : (registeredArchive != null ? registeredArchive : file.getName());
-            try {
-                int partCount = ExternalVolumeWriter.previewPartCount(
-                        file, sourceIsZip, archiveName, recipientKey, volumeLimitBytes);
-                if (partCount > 1) {
-                    lines.add((isFolderZip
-                            ? folderNameForZip(file) + "（文件夹）"
-                            : file.getName()) + " → " + partCount + " 卷");
-                    totalParts += partCount;
-                }
-            } catch (Exception error) {
-                showError("无法计算分卷：" + error.getMessage());
-                return false;
-            }
+                        @Override
+                        public String folderName(File file) {
+                            return TempFileManager.resolveFolderName(file);
+                        }
+
+                        @Override
+                        public String registeredArchive(File file) {
+                            return TempFileManager.getArchiveName(file);
+                        }
+                    });
+        } catch (Exception error) {
+            showError("无法计算分卷：" + error.getMessage());
+            return false;
         }
-        if (lines.isEmpty()) {
+        if (plan.isEmpty()) {
             return true;
         }
 
-        StringBuilder message = new StringBuilder();
-        message.append("将按当前设置（")
-                .append(SettingsStorage.getVolumeLimitPreset().getLabel())
-                .append("/卷）生成：\n\n");
-        for (String line : lines) {
-            message.append("• ").append(line).append('\n');
-        }
-        message.append("\n共 ").append(totalParts).append(" 卷。");
-        if (totalParts > 20) {
-            message.append("\n\n卷数较多，建议增大分卷大小或减少文件。");
-        }
-        message.append("\n\n是否开始加密？");
-
-        JTextArea area = new JTextArea(message.toString());
+        JTextArea area = new JTextArea(
+                plan.buildMessage(SettingsStorage.getVolumeLimitPreset().getLabel()));
         area.setFont(app.theme.AppFonts.getNormalFont());
         area.setForeground(app.theme.ThemeManager.getTextColor());
         area.setBackground(app.theme.ThemeManager.getPanelBackgroundColor());
@@ -2633,325 +2116,28 @@ public class SecureTextPanel extends OperationPanel {
                 area,
                 "分卷预览",
                 JOptionPane.YES_NO_OPTION,
-                totalParts > 20 ? JOptionPane.WARNING_MESSAGE : JOptionPane.QUESTION_MESSAGE,
+                plan.isWarning() ? JOptionPane.WARNING_MESSAGE : JOptionPane.QUESTION_MESSAGE,
                 null,
                 options,
                 options[0]);
         return choice == 0;
     }
 
-    /** 多文件归档根名与 Android 一致：`archive_<yyyyMMdd_HHmmss>`，不含用户文件名。 */
-    private static String newArchiveRootName() {
-        return "archive_" + java.time.LocalDateTime.now().format(
-                java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
-    }
+    /** 把一批产物放进结果列表并切到文件卡：批量加解密与单文件保存共用同一收尾顺序。 */
+    private void displayOutputFiles(List<FileInfo> outputs) {
+        outputFilesList.clear();
+        outputFileListModel.clear();
 
-    /** 优先取登记时的原文件夹名；只有旧调用点没有登记时才从临时名兜底。 */
-    static String folderNameForZip(File zipFile) {
-        String registered = TempFileManager.getFolderName(zipFile);
-        if (registered != null) {
-            return registered;
-        }
-        String tempName = zipFile.getName();
-        String folderName = null;
-        if (tempName.contains("_")) {
-            int lastUnderscore = tempName.lastIndexOf('_');
-            folderName = tempName.substring(0, lastUnderscore);
-        }
-        if (folderName == null || folderName.isEmpty()) {
-            folderName = tempName.replace(".zip", "");
-        }
-        return folderName;
-    }
-
-    private class DecryptFilesWorker extends SwingWorker<List<FileInfo>, SecureTextProgressUpdate> {
-        private List<java.io.File> filesToDecrypt;
-        private String myKeyPairName;
-        private String otherKeySelection;
-        private long startTime;
-        private int decryptSuccessCount = 0;
-        private int decryptFailCount = 0;
-        private int signatureFailCount = 0;
-        private String firstErrorMessage;
-        private List<FileInfo> outputFiles = new java.util.ArrayList<>();
-        private java.io.File outputDirectory;
-        private List<FileInfo> inputFilesRecord = new java.util.ArrayList<>();
-        private List<FileInfo> outputFilesRecord = new java.util.ArrayList<>();
-        private SmoothProgressManager smoothProgress;
-
-        DecryptFilesWorker(List<java.io.File> filesToDecrypt, String myKeyPairName, String otherKeySelection, long startTime) {
-            this.filesToDecrypt = filesToDecrypt;
-            this.myKeyPairName = myKeyPairName;
-            this.otherKeySelection = otherKeySelection;
-            this.startTime = startTime;
-        }
-
-        /** 单文件 .aegix 与单卷外部包统一走共享内核。 */
-        private void decryptBinaryFile(
-                java.io.File inputFile,
-                PrivateKey privateKey,
-                List<PublicKey> senderCandidates,
-                java.io.File outputDir,
-                int baseProgress,
-                int progressRange
-        ) throws Exception {
-            FileDecryptService.Result result = FileDecryptService.decrypt(
-                    inputFile,
-                    privateKey,
-                    senderCandidates,
-                    outputDir,
-                    (phase, processed, total) -> {
-                        int percent = total <= 0
-                                ? 0
-                                : (int) Math.min(100L, Math.max(0L, processed * 100L / total));
-                        publish(new SecureTextProgressUpdate(
-                                baseProgress + progressRange * percent / 100,
-                                "正在解密: " + inputFile.getName()
-                                        + " (" + LogManager.formatBytes(processed)
-                                        + "/" + LogManager.formatBytes(total) + ")"));
-                    },
-                    (partNumber, partCount, processed, total) -> {
-                        int percent = total <= 0
-                                ? 0
-                                : (int) Math.min(100L, Math.max(0L, processed * 100L / total));
-                        publish(new SecureTextProgressUpdate(
-                                baseProgress + progressRange * percent / 100,
-                                "正在解密: " + inputFile.getName()
-                                        + " [第 " + partNumber + "/" + partCount + " 卷, "
-                                        + LogManager.formatBytes(processed)
-                                        + "/" + LogManager.formatBytes(total) + "]"));
-                    },
-                    null);
-
-            java.io.File output = result.getOutput();
-            long outputSize = result.isFolder()
-                    ? FolderZipUtils.calculateFolderSize(output)
-                    : output.length();
-
-            FileInfo outFileInfo = new FileInfo(
-                    output.getName(),
-                    output.getAbsolutePath(),
-                    outputSize,
-                    "成功");
-            outFileInfo.setOriginalFileName(result.getOriginalFileName());
-            outFileInfo.setIsFolder(result.isFolder());
-            outFileInfo.setSignatureValid(result.isSignatureValid());
-            if (result.getVolumeCount() > 0) {
-                outFileInfo.setIsSplit(true);
-                outFileInfo.setVolumeCount(result.getVolumeCount());
-            }
-            if (result.getSha256Hash() != null) {
-                outFileInfo.setSha256Hash(result.getSha256Hash());
-            }
-
-            FileInfo inFileInfo = new FileInfo(
-                    inputFile.getName(),
-                    inputFile.getAbsolutePath(),
-                    inputFile.length(),
-                    "成功");
-            inFileInfo.setOriginalFileName(inputFile.getName());
-            inFileInfo.setSignatureValid(result.isSignatureValid());
-            if (result.getVolumeCount() > 0) {
-                inFileInfo.setIsSplit(true);
-                inFileInfo.setVolumeCount(result.getVolumeCount());
-            }
-            if (!result.isSignatureValid()) {
-                inFileInfo.setErrorMessage("签名无效");
-                signatureFailCount++;
-            }
-
-            inputFilesRecord.add(inFileInfo);
-            outputFilesRecord.add(outFileInfo);
-            outputFiles.add(outFileInfo);
-            decryptSuccessCount++;
-            publish(new SecureTextProgressUpdate(
-                    baseProgress + progressRange,
-                    "已解密: " + inputFile.getName()));
-        }
-
-        @Override
-        protected List<FileInfo> doInBackground() throws Exception {
-            smoothProgress = new SmoothProgressManager(progressBar);
-
-            publish(new SecureTextProgressUpdate(3, "正在初始化..."));
-
-            String outputDir = settings.manager.SettingsManager.getDefaultOutputDirectory();
-            if (outputDir == null || outputDir.isEmpty()) {
-                outputDirectory = filesToDecrypt.get(0).getParentFile();
-            } else {
-                outputDirectory = new java.io.File(outputDir);
-            }
-            if (!outputDirectory.exists()) {
-                outputDirectory.mkdirs();
-            }
-
-            PrivateKey myPrivateKey = crypto.key.PrivateKeyAccessService.getPrivateKey(myKeyPairName);
-            if (myPrivateKey == null) {
-                return null;
-            }
-            publish(new SecureTextProgressUpdate(20, "已加载私钥..."));
-
-            publish(new SecureTextProgressUpdate(20, "正在加载公钥..."));
-            PublicKey otherPublicKey = loadPublicKeyFromSelection(otherKeySelection);
-            List<PublicKey> senderCandidates = loadSenderCandidates();
-
-            int total = filesToDecrypt.size();
-            for (int i = 0; i < total; i++) {
-                java.io.File inputFile = filesToDecrypt.get(i);
-                final int fileBaseProgress = 20 + (i * 75 / total);
-                final int fileProgressRange = Math.max(1, 75 / total);
-
-                try {
-                    decryptBinaryFile(
-                            inputFile,
-                            myPrivateKey,
-                            senderCandidates,
-                            outputDirectory,
-                            fileBaseProgress,
-                            fileProgressRange);
-                } catch (Exception error) {
-                    LogManager.error("decrypt-file failed | bytes=" + inputFile.length(), error);
-                    decryptFailCount++;
-                    String errorMessage = FileOperationErrors.userMessage(error);
-                    if (firstErrorMessage == null) {
-                        firstErrorMessage = errorMessage;
-                    }
-                    FileInfo inFileInfo = new FileInfo(
-                            inputFile.getName(),
-                            inputFile.getAbsolutePath(),
-                            inputFile.length(),
-                            "失败",
-                            errorMessage,
-                            null);
-                    inFileInfo.setOriginalFileName(inputFile.getName());
-                    inputFilesRecord.add(inFileInfo);
-                    publish(new SecureTextProgressUpdate(
-                            fileBaseProgress + fileProgressRange,
-                            "解密失败: " + inputFile.getName()));
-                }
-
-                int baseProgress = 20;
-                int progressPerFile = 75 / total;
-                int progress = baseProgress + (i + 1) * progressPerFile;
-                String fileName = inputFile.getName();
-                if (fileName.length() > 20) {
-                    fileName = fileName.substring(0, 17) + "...";
-                }
-                publish(new SecureTextProgressUpdate(progress, "正在处理: " + fileName));
-            }
-
-            publish(new SecureTextProgressUpdate(100, "完成！"));
-            return outputFiles;
-        }
-
-        @Override
-        protected void process(List<SecureTextProgressUpdate> chunks) {
-            for (SecureTextProgressUpdate update : chunks) {
-                if (smoothProgress != null) {
-                    if (update.progress == 100) {
-                        smoothProgress.setImmediateProgress(100, update.stepText);
-                    } else {
-                        smoothProgress.setTargetProgress(update.progress, update.stepText);
-                    }
-                } else {
-                    progressBar.setValue(update.progress);
-                    progressBar.setString(update.stepText);
-                }
+        if (outputs != null) {
+            for (FileInfo fileInfo : outputs) {
+                outputFilesList.add(fileInfo);
+                outputFileListModel.addElement(fileInfo);
             }
         }
 
-        @Override
-        protected void done() {
-            if (smoothProgress != null) {
-                smoothProgress.stop();
-            }
-            try {
-                get();
-
-                outputFilesList.clear();
-                outputFileListModel.clear();
-
-                for (FileInfo fileInfo : outputFiles) {
-                    outputFilesList.add(fileInfo);
-                    outputFileListModel.addElement(fileInfo);
-                }
-
-                updateOutputFileDetails();
-
-                outputCardLayout.show(outputCenterPanel, "FILE_MODE");
-
-                updateSaveButtonState();
-
-                progressBar.setString("批量解密完成！");
-
-                String resultText;
-                boolean hasDecryptSuccess = decryptSuccessCount > 0;
-                boolean hasDecryptFail = decryptFailCount > 0;
-                boolean hasSignatureFail = signatureFailCount > 0;
-
-                if (!hasDecryptSuccess && !hasDecryptFail && !hasSignatureFail) {
-                    resultText = "";
-                } else if (!hasDecryptFail && !hasSignatureFail) {
-                    resultText = "成功 " + decryptSuccessCount;
-                } else if (!hasDecryptSuccess) {
-                    resultText = "";
-                    if (hasDecryptFail) {
-                        resultText = "失败 " + decryptFailCount;
-                    }
-                    if (hasSignatureFail) {
-                        if (!resultText.isEmpty()) {
-                            resultText += "，";
-                        }
-                        resultText += "验证失败 " + signatureFailCount;
-                    }
-                } else {
-                    resultText = "成功 " + decryptSuccessCount;
-                    if (hasDecryptFail) {
-                        resultText += "，失败 " + decryptFailCount;
-                    }
-                    if (hasSignatureFail) {
-                        resultText += "，验证失败 " + signatureFailCount;
-                    }
-                }
-
-                if (decryptSuccessCount == 0 && decryptFailCount > 0) {
-                    verifyResultLabel.setText("批量解密失败！"
-                            + (firstErrorMessage == null ? "" : firstErrorMessage));
-                } else {
-                    verifyResultLabel.setText("批量解密完成！" + resultText);
-                }
-                verifyResultLabel.setForeground(decryptFailCount > 0
-                        ? UIConstants.ERROR_TEXT_COLOR
-                        : UIConstants.SUCCESS_TEXT_COLOR);
-
-                String contactName = null;
-                if (isContactSelection(otherKeySelection)) {
-                    contactName = getContactNameFromSelection(otherKeySelection);
-                }
-
-                addHistoryRecordEnhanced(
-                        history.model.HistoryType.DECRYPT,
-                        contactName,
-                        history.model.RecordCategory.BATCH,
-                        "批量解密 " + filesToDecrypt.size() + " 个文件",
-                        true,
-                        resultText,
-                        null,
-                        null,
-                        inputFilesRecord,
-                        null,
-                        outputFilesRecord,
-                        myKeyPairName,
-                        System.currentTimeMillis() - startTime
-                );
-
-            } catch (Exception ex) {
-                verifyResultLabel.setText("批量解密失败：" + FileOperationErrors.userMessage(ex));
-                verifyResultLabel.setForeground(UIConstants.ERROR_TEXT_COLOR);
-                progressBar.setString("批量解密失败！");
-                LogManager.error("批量解密失败", ex);
-            }
-        }
+        updateOutputFileDetails();
+        outputCardLayout.show(outputCenterPanel, "FILE_MODE");
+        updateSaveButtonState();
     }
 
     /**
@@ -2972,14 +2158,48 @@ public class SecureTextPanel extends OperationPanel {
 
             final String myKeyPairNameFinal = myKeyPairName;
             final String otherKeySelectionFinal = otherKeySelection;
-            final List<java.io.File> filesToDecrypt = new java.util.ArrayList<>(selectedFiles);
+            final List<java.io.File> filesToDecrypt = new java.util.ArrayList<>(fileSelection.files());
             final long startTime = System.currentTimeMillis();
+            final java.util.concurrent.atomic.AtomicBoolean cancelled = beginBatchRun();
 
-            new DecryptFilesWorker(filesToDecrypt, myKeyPairNameFinal, otherKeySelectionFinal, startTime).execute();
+            new securecomm.ui.worker.DecryptFilesWorker(
+                    new PanelBatchHost(HistoryType.DECRYPT, "批量解密 "), progressBar, filesToDecrypt,
+                    myKeyPairNameFinal, otherKeySelectionFinal, startTime,
+                    new securecomm.service.DefaultFileTaskService(), cancelled).execute();
 
         } catch (Exception ex) {
             showError("操作失败：" + ex.getMessage());
             LogManager.error("批量解密操作失败", ex);
+        }
+    }
+
+    /** 批量任务的取消按钮：只置标记，停在哪一步由后台任务自己判断。 */
+    private void requestBatchCancel() {
+        java.util.concurrent.atomic.AtomicBoolean flag = batchCancelled;
+        if (flag != null && !flag.getAndSet(true)) {
+            cancelButton.setEnabled(false);
+            progressBar.setString("正在取消...");
+        }
+    }
+
+    /** 开始一次批量任务：重置取消标记并显示取消按钮。 */
+    private java.util.concurrent.atomic.AtomicBoolean beginBatchRun() {
+        java.util.concurrent.atomic.AtomicBoolean flag =
+                new java.util.concurrent.atomic.AtomicBoolean(false);
+        batchCancelled = flag;
+        if (cancelButton != null) {
+            cancelButton.setEnabled(true);
+            cancelButton.setVisible(true);
+        }
+        return flag;
+    }
+
+    /** 批量任务结束（成功、失败、取消都走这里）：隐藏取消按钮。 */
+    private void endBatchRun() {
+        batchCancelled = null;
+        if (cancelButton != null) {
+            cancelButton.setVisible(false);
+            cancelButton.setEnabled(true);
         }
     }
 
@@ -3004,13 +2224,13 @@ public class SecureTextPanel extends OperationPanel {
      * 批量操作前置验证
      */
     private boolean validateBatchOperationPrerequisites(String myKeyName, String otherSelection) {
-        if (myKeyName == null || myKeyName.isEmpty()) {
-            verifyResultLabel.setText("请先选择密钥对！");
-            verifyResultLabel.setForeground(UIConstants.ERROR_TEXT_COLOR);
-            return false;
-        }
-        if (otherSelection == null || otherSelection.equals("选择联系人")) {
-            verifyResultLabel.setText("请选择联系人！");
+        securecomm.controller.FileSelectionController.BatchBlocker blocker =
+                fileSelection.validateBatch(myKeyName, otherSelection);
+        if (blocker != securecomm.controller.FileSelectionController.BatchBlocker.NONE) {
+            verifyResultLabel.setText(
+                    blocker == securecomm.controller.FileSelectionController.BatchBlocker.NO_KEY_PAIR
+                            ? "请先选择密钥对！"
+                            : "请选择联系人！");
             verifyResultLabel.setForeground(UIConstants.ERROR_TEXT_COLOR);
             return false;
         }

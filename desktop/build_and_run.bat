@@ -6,7 +6,7 @@ echo    Encryption Tool - Build & Run
 echo ========================================
 echo.
 
-call build.bat nopause
+call ".uild.bat" nopause
 if errorlevel 1 exit /b 1
 
 echo.
@@ -15,5 +15,5 @@ echo    Launching application...
 echo ========================================
 echo.
 
-call run.bat nopause
+call ".un.bat" nopause
 exit /b %ERRORLEVEL%

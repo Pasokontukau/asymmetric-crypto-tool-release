@@ -43,11 +43,13 @@ public class LogManager {
             LogFormatter formatter = new LogFormatter();
             
             fileHandler = new FileHandler(logFilePath, true);
+            fileHandler.setEncoding("UTF-8");
             fileHandler.setLevel(Level.ALL);
             fileHandler.setFormatter(formatter);
             logger.addHandler(fileHandler);
             
             ConsoleHandler consoleHandler = new ConsoleHandler();
+            consoleHandler.setEncoding("UTF-8");
             consoleHandler.setLevel(Level.INFO);
             consoleHandler.setFormatter(formatter);
             logger.addHandler(consoleHandler);

@@ -33,8 +33,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * {@link FileCryptoEngine}。单文件 `.aegix` 与当前外部分卷共用同一套共享内核。</p>
  *
  * <p>多卷外部分卷不能单独解密：本类在读到 `partCount > 1` 时抛出
- * {@link ExternalPartsException}，由 UI 引导用户去「分卷合并」页。所有输出先写临时文件，
- * 失败或取消时删除；单卷外部分卷按 Android 语义原样输出 ZIP。</p>
+ * {@link ExternalPartsException}，由 UI 引导用户把全部卷一起选中后走批量解密
+ * （批量解密会自动合并）。所有输出先写临时文件，失败或取消时删除；
+ * 单卷外部分卷按 Android 语义原样输出 ZIP。</p>
  */
 public final class FileDecryptService {
 
@@ -108,7 +109,7 @@ public final class FileDecryptService {
         }
     }
 
-    /** 选中了多卷外部包中的一卷；必须去「分卷合并」页处理整组。 */
+    /** 选中了多卷外部包中的一卷；必须在文件页把整组卷一起选中后批量解密。 */
     public static final class ExternalPartsException extends Exception {
         private final Integer partIndex;
         private final int partCount;
@@ -128,10 +129,7 @@ public final class FileDecryptService {
         }
 
         private static String message(Integer partIndex, int partCount) {
-            String index = partIndex == null ? "未知" : String.valueOf(partIndex);
-            return "这是外部分卷第 " + index + "/" + partCount
-                    + " 卷，不能单独解密；请到「分卷合并」页选择全部 "
-                    + partCount + " 卷后合并为 ZIP。";
+            return PartSetPromptText.singleVolumeCannotDecrypt(partIndex, partCount);
         }
     }
 

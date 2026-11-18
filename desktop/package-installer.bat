@@ -1,5 +1,5 @@
 @echo off
-chcp 936 >nul
+chcp 65001 >nul
 setlocal EnableExtensions
 
 echo ========================================
@@ -14,6 +14,9 @@ set "MVN=%MAVEN_HOME%\bin\mvn.cmd"
 if not exist "%MVN%" set "MVN="
 if not defined MVN if exist "%USERPROFILE%\.trae-cn\tools\maven\latest\bin\mvn.cmd" set "MVN=%USERPROFILE%\.trae-cn\tools\maven\latest\bin\mvn.cmd"
 if not defined MVN for /f "delims=" %%i in ('where mvn 2^>nul') do set "MVN=%%i"
+rem Maven prints Chinese paths and Javac warnings with the JVM default charset;
+rem force UTF-8 so chcp 65001 consoles and redirected logs stay readable.
+set "MAVEN_OPTS=%MAVEN_OPTS% -Dfile.encoding=UTF-8"
 if not defined MVN (
     echo ERROR: Maven not found.
     exit /b 1
@@ -48,7 +51,7 @@ REM ---------- shared crypto-core ----------
 if exist "..\android\gradlew.bat" (
     echo Publishing shared crypto-core to Maven Local...
     pushd "..\android"
-    call ".\gradlew.bat" -Dorg.gradle.jvmargs="-Xmx2048m -Dfile.encoding=GBK" :crypto-core:publishToMavenLocal
+    call ".\gradlew.bat" -Dorg.gradle.jvmargs="-Xmx2048m -Dfile.encoding=UTF-8" :crypto-core:publishToMavenLocal
     if errorlevel 1 (
         popd
         echo ERROR: Failed to publish shared crypto-core.
@@ -113,7 +116,7 @@ if exist "target\installer" rmdir /s /q "target\installer"
   --copyright "GPL-3.0-only" ^
   --icon "%CD%\%STAGE%\app.ico" ^
   --runtime-image "%CD%\%STAGE%\runtime" ^
-  --java-options "-Dapp.home=$BINDIR" ^
+  --java-options "-Dapp.home=$BINDIR" --java-options "-Dfile.encoding=UTF-8" ^
   --install-dir CryptoAssistant ^
   --win-menu ^
   --win-menu-group CryptoAssistant ^

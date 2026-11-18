@@ -76,6 +76,24 @@ public class TempFileManager {
         }
     }
 
+    /** 优先取登记时的原文件夹名；只有旧调用点没有登记时才从临时名兜底。 */
+    public static String resolveFolderName(File zipFile) {
+        String registered = getFolderName(zipFile);
+        if (registered != null) {
+            return registered;
+        }
+        String tempName = zipFile.getName();
+        String folderName = null;
+        if (tempName.contains("_")) {
+            int lastUnderscore = tempName.lastIndexOf('_');
+            folderName = tempName.substring(0, lastUnderscore);
+        }
+        if (folderName == null || folderName.isEmpty()) {
+            folderName = tempName.replace(".zip", "");
+        }
+        return folderName;
+    }
+
     public static String getArchiveName(File file) {
         synchronized (tempZipFiles) {
             return archiveNames.get(file);

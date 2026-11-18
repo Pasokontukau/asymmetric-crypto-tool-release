@@ -136,4 +136,23 @@ public class AtomicFileOutputTest {
         assertFalse(new File(directory, "x.aegix").exists());
         assertArrayEquals(new File[0], directory.listFiles());
     }
+
+    /** 写了一半再失败（取消/磁盘问题）时，临时文件必须被删掉，目标文件不能出现。 */
+    @Test
+    public void partialWriteThenFailureLeavesNoHalfFile() throws Exception {
+        File directory = temporaryFolder.newFolder("out-partial");
+
+        try {
+            AtomicFileOutput.write(directory, "x.aegix", output -> {
+                output.write(new byte[4096]);
+                throw new IOException("cancelled");
+            });
+            fail("写入中途失败时应该抛出异常");
+        } catch (IOException expected) {
+            assertEquals("cancelled", expected.getMessage());
+        }
+
+        assertFalse(new File(directory, "x.aegix").exists());
+        assertArrayEquals(new File[0], directory.listFiles());
+    }
 }

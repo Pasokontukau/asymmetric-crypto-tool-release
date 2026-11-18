@@ -1,6 +1,6 @@
 @echo off
 setlocal
-chcp 936 >nul
+chcp 65001 >nul
 
 set "ROOT=%~dp0"
 set "DESKTOP=%ROOT%desktop"

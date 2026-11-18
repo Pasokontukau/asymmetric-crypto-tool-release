@@ -4,17 +4,14 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-import crypto.key.KeyUtils;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
@@ -22,6 +19,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import securecomm.service.ExternalPartFixtures;
 import securecomm.service.FileDecryptService;
 import volumes.service.ExternalPartMerger;
 
@@ -32,8 +30,6 @@ import volumes.service.ExternalPartMerger;
  * 这验证的是当前 Android 写出的格式能否被桌面合并，而不是旧 VOLU 兼容。</p>
  */
 public class ExternalPartFixtureTest {
-
-    private static final String PROPERTIES = "/external/external-part-fixture.properties";
 
     @Rule
     public TemporaryFolder temporaryFolder = new TemporaryFolder();
@@ -123,28 +119,19 @@ public class ExternalPartFixtureTest {
         if (fixtureDirectory == null) {
             fixtureDirectory = temporaryFolder.newFolder("fixtures");
         }
-        File output = new File(fixtureDirectory, name);
-        try (InputStream input = ExternalPartFixtureTest.class.getResourceAsStream(
-                "/external/" + name)) {
-            assertNotNull("缺少夹具 /external/" + name, input);
-            try (FileOutputStream out = new FileOutputStream(output)) {
-                byte[] buffer = new byte[8192];
-                int read;
-                while ((read = input.read(buffer)) >= 0) {
-                    out.write(buffer, 0, read);
-                }
-            }
-        }
-        return output;
+        return ExternalPartFixtures.copy(fixtureDirectory, name);
     }
 
     private static Properties properties() throws Exception {
-        try (InputStream input = ExternalPartFixtureTest.class.getResourceAsStream(PROPERTIES)) {
-            assertNotNull("缺少夹具 " + PROPERTIES, input);
-            Properties properties = new Properties();
-            properties.load(input);
-            return properties;
-        }
+        return ExternalPartFixtures.properties();
+    }
+
+    private static PrivateKey recipientPrivate(Properties properties) throws Exception {
+        return ExternalPartFixtures.recipientPrivate(properties);
+    }
+
+    private static PublicKey senderPublic(Properties properties) throws Exception {
+        return ExternalPartFixtures.senderPublic(properties);
     }
 
     private static byte[] fixture(String name) throws Exception {
@@ -173,17 +160,5 @@ public class ExternalPartFixtureTest {
             }
             assertFalse("密文/头部不应出现明文文件名: " + name, match);
         }
-    }
-
-    private static PrivateKey recipientPrivate(Properties properties) throws Exception {
-        return KeyUtils.getPrivateKeyFromBytes(
-                Base64.getDecoder().decode(
-                        properties.getProperty("recipient.private.pkcs8.b64")));
-    }
-
-    private static PublicKey senderPublic(Properties properties) throws Exception {
-        return KeyUtils.getPublicKeyFromBytes(
-                Base64.getDecoder().decode(
-                        properties.getProperty("sender.public.x509.b64")));
     }
 }

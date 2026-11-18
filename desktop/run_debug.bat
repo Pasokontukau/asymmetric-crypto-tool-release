@@ -1,5 +1,5 @@
 @echo off
-chcp 936 >nul
+chcp 65001 >nul
 echo ========================================
 echo    Encryption Tool - Debug Mode
 echo ========================================
@@ -32,7 +32,7 @@ if not defined JAVA (
 )
 
 echo [INFO] Using Java: %JAVA%
-"%JAVA%" -jar app.jar
+"%JAVA%" -Dfile.encoding=UTF-8 -jar app.jar
 
 echo.
 echo ========================================

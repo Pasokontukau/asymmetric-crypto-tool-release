@@ -1,5 +1,5 @@
 @echo off
-chcp 936 >nul
+chcp 65001 >nul
 
 echo ========================================
 echo  Build ^& Package (Maven)
@@ -13,6 +13,9 @@ if not exist "%MVN%" set "MVN="
 REM This machine keeps Maven under .trae-cn but not on PATH (see docs/agent/environment.md).
 if not defined MVN if exist "%USERPROFILE%\.trae-cn\tools\maven\latest\bin\mvn.cmd" set "MVN=%USERPROFILE%\.trae-cn\tools\maven\latest\bin\mvn.cmd"
 if not defined MVN for /f "delims=" %%i in ('where mvn 2^>nul') do set "MVN=%%i"
+rem Maven prints Chinese paths and Javac warnings with the JVM default charset;
+rem force UTF-8 so chcp 65001 consoles and redirected logs stay readable.
+set "MAVEN_OPTS=%MAVEN_OPTS% -Dfile.encoding=UTF-8"
 
 if not defined MVN (
     echo ERROR: Maven not found.
@@ -45,13 +48,13 @@ if defined JAVAC_VERSION (
 )
 if not defined JAVA_HOME if exist "%JDK17%\bin\javac.exe" set "JAVA_HOME=%JDK17%"
 
-REM 内核是两端共享的上游（..\shared\crypto-core，Gradle 根在 ..\android）：
-REM monorepo 里先把最新源码发布到 Maven Local；独立桌面仓库没有这些目录时跳过，
-REM 改从远端 Maven 仓库解析固定版本。
+REM Monorepo note: kernel sources live in ..\shared\crypto-core, Gradle build in ..ndroid.
+REM Monorepo note: kernel sources live in ..\shared\crypto-core, Gradle build in ..ndroid.
+REM Monorepo note: kernel sources live in ..\shared\crypto-core, Gradle build in ..ndroid.
 if exist "..\android\gradlew.bat" (
     echo Publishing shared crypto-core to Maven Local...
     pushd "..\android"
-    call gradlew.bat -Dorg.gradle.jvmargs="-Xmx2048m -Dfile.encoding=GBK" :crypto-core:publishToMavenLocal
+    call ".\gradlew.bat" -Dorg.gradle.jvmargs="-Xmx2048m -Dfile.encoding=UTF-8" :crypto-core:publishToMavenLocal
     if errorlevel 1 (
         popd
         echo ERROR: Failed to publish shared crypto-core.

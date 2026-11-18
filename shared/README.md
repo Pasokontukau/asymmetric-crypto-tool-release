@@ -16,14 +16,17 @@
 ```bash
 # Android + 内核测试（Gradle 根仍在 android/）
 cd android
-./gradlew -Dorg.gradle.jvmargs="-Xmx2048m -Dfile.encoding=GBK" :crypto-core:test
+./gradlew -Dorg.gradle.jvmargs="-Xmx2048m -Dfile.encoding=UTF-8" :crypto-core:test
 
 # 发布给桌面端（本机 Maven 仓库）
-./gradlew -Dorg.gradle.jvmargs="-Xmx2048m -Dfile.encoding=GBK" :crypto-core:publishToMavenLocal
+./gradlew -Dorg.gradle.jvmargs="-Xmx2048m -Dfile.encoding=UTF-8" :crypto-core:publishToMavenLocal
 
 # 桌面端加载新内核后重新打包
 cd ../desktop && mvn -B clean package
 ```
+
+默认使用 UTF-8。只有仓库路径含非 ASCII 字符时，Gradle 测试 worker 的参数文件才可能
+被系统编码错误解码；那种情况下再把 `-Dfile.encoding` 临时换成 `GBK`。
 
 ## 平台差异
 

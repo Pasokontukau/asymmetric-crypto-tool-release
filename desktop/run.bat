@@ -1,5 +1,5 @@
 @echo off
-chcp 936 >nul
+chcp 65001 >nul
 
 cd /d "%~dp0"
 
@@ -25,7 +25,7 @@ if not exist app.jar goto :target_classes
 
 echo Running: java -jar app.jar
 echo.
-"%JAVA%" -jar app.jar
+"%JAVA%" -Dfile.encoding=UTF-8 -jar app.jar
 set "RUN_CODE=%ERRORLEVEL%"
 goto :end
 
@@ -34,7 +34,7 @@ if not exist target\classes\app\AppMain.class goto :missing
 
 echo Running from: target\classes
 echo.
-"%JAVA%" -cp "target\classes" app.AppMain
+"%JAVA%" -Dfile.encoding=UTF-8 -cp "target\classes" app.AppMain
 set "RUN_CODE=%ERRORLEVEL%"
 goto :end
 

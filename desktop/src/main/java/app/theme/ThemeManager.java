@@ -85,7 +85,7 @@ public class ThemeManager {
             // 执行注册表查询命令
             Process process = Runtime.getRuntime().exec("reg query \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize\" /v AppsUseLightTheme");
             java.io.BufferedReader reader = new java.io.BufferedReader(
-                new java.io.InputStreamReader(process.getInputStream(), "GBK"));
+                new java.io.InputStreamReader(process.getInputStream(), java.nio.charset.StandardCharsets.UTF_8));
             
             String line;
             while ((line = reader.readLine()) != null) {

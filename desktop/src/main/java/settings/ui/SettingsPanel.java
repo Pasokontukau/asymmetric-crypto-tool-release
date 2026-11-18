@@ -8,7 +8,6 @@ import core.storage.StorageManager;
 import core.util.ExportPasswordDialog;
 import core.util.LogManager;
 import core.util.RestartHelper;
-import history.storage.HistoryStorage;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Color;
@@ -58,12 +57,16 @@ import javax.swing.SwingUtilities;
 import javax.swing.border.TitledBorder;
 import javax.swing.table.DefaultTableModel;
 import securecomm.ui.SecureTextPanel;
-import settings.manager.SettingsManager;
 import settings.model.VolumeLimitPreset;
 import settings.storage.SettingsStorage;
 
 public class SettingsPanel extends JPanel {
-    
+
+    private final settings.repository.SettingsRepository settingsRepository =
+            new settings.repository.SettingsRepository();
+    private final history.repository.HistoryRepository historyRepository =
+            new history.repository.HistoryRepository();
+
     private JSplitPane splitPane;
     private JList<String> menuList;
     private CardLayout cardLayout;
@@ -163,7 +166,7 @@ public class SettingsPanel extends JPanel {
                     
                     // 如果选择的是安全设置，更新安全级别选择和超时面板可见性
                     if ("安全设置".equals(selectedItem) && securityLevelComboBox != null && timeoutPanel != null) {
-                        String currentLevel = settings.storage.SettingsStorage.getSecurityLevel();
+                        String currentLevel = settingsRepository.getSecurityLevel();
                         if (settings.storage.SettingsStorage.SECURITY_LEVEL_STRICT.equals(currentLevel)) {
                             securityLevelComboBox.setSelectedIndex(0);
                             timeoutPanel.setVisible(false);
@@ -273,7 +276,7 @@ public class SettingsPanel extends JPanel {
         JPanel fontSizeInputPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         fontSizeInputPanel.setBackground(app.theme.ThemeManager.getPanelBackgroundColor());
         
-        JTextField fontSizeField = new JTextField(String.valueOf(SettingsManager.getFontSize()), 3);
+        JTextField fontSizeField = new JTextField(String.valueOf(settingsRepository.getFontSize()), 3);
         fontSizeField.setFont(app.theme.AppFonts.getNormalFont());
         fontSizeField.setBorder(ThemeManager.createRoundedBorder(1));
         fontSizeField.putClientProperty("TextField.arc", 12);
@@ -299,7 +302,7 @@ public class SettingsPanel extends JPanel {
                     JOptionPane.showMessageDialog(SettingsPanel.this, "请输入10-24之间的数字！", "错误", JOptionPane.ERROR_MESSAGE);
                     return;
                 }
-                SettingsManager.setFontSize(newFontSize);
+                settingsRepository.setFontSize(newFontSize);
                 core.util.RestartHelper.showRestartConfirmDialog(SettingsPanel.this, "字体大小已更新");
             } catch (NumberFormatException ex) {
                 JOptionPane.showMessageDialog(SettingsPanel.this, "请输入有效的数字！", "错误", JOptionPane.ERROR_MESSAGE);
@@ -340,7 +343,7 @@ public class SettingsPanel extends JPanel {
         systemThemeRadio.setForeground(app.theme.ThemeManager.getTextColor());
         systemThemeRadio.setBackground(app.theme.ThemeManager.getPanelBackgroundColor());
         systemThemeRadio.addActionListener(e -> {
-            settings.manager.SettingsManager.setProperty("theme", app.theme.ThemeManager.THEME_SYSTEM);
+            settingsRepository.setTheme(app.theme.ThemeManager.THEME_SYSTEM);
             core.util.RestartHelper.showRestartConfirmDialog(SettingsPanel.this, "主题已更新");
         });
         themeButtonGroup.add(systemThemeRadio);
@@ -351,7 +354,7 @@ public class SettingsPanel extends JPanel {
         lightThemeRadio.setForeground(app.theme.ThemeManager.getTextColor());
         lightThemeRadio.setBackground(app.theme.ThemeManager.getPanelBackgroundColor());
         lightThemeRadio.addActionListener(e -> {
-            settings.manager.SettingsManager.setProperty("theme", "light");
+            settingsRepository.setTheme("light");
             core.util.RestartHelper.showRestartConfirmDialog(SettingsPanel.this, "主题已更新");
         });
         themeButtonGroup.add(lightThemeRadio);
@@ -362,7 +365,7 @@ public class SettingsPanel extends JPanel {
         darkThemeRadio.setForeground(app.theme.ThemeManager.getTextColor());
         darkThemeRadio.setBackground(app.theme.ThemeManager.getPanelBackgroundColor());
         darkThemeRadio.addActionListener(e -> {
-            settings.manager.SettingsManager.setProperty("theme", "dark");
+            settingsRepository.setTheme("dark");
             core.util.RestartHelper.showRestartConfirmDialog(SettingsPanel.this, "主题已更新");
         });
         themeButtonGroup.add(darkThemeRadio);
@@ -371,7 +374,7 @@ public class SettingsPanel extends JPanel {
         mainPanel.add(themePanel, gbc);
         
         // 根据当前设置选择主题
-        String currentTheme = settings.manager.SettingsManager.getProperty("theme", "light");
+        String currentTheme = settingsRepository.getTheme();
         if (app.theme.ThemeManager.THEME_SYSTEM.equals(currentTheme)) {
             systemThemeRadio.setSelected(true);
         } else if (currentTheme.equals("dark") || currentTheme.equals("darcula") || currentTheme.equals("intellij")) {
@@ -402,7 +405,7 @@ public class SettingsPanel extends JPanel {
         gbc.insets = new Insets(5, 10, 5, 10);
         gbc.fill = GridBagConstraints.HORIZONTAL;
         // 获取当前字体配置
-        String currentFont = settings.manager.SettingsManager.getFontFamily();
+        String currentFont = settingsRepository.getFontFamily();
         // 获取系统所有可用字体
         String[] availableFonts = app.theme.AppFonts.getAvailableFontFamilies();
         // 创建下拉框模型，包含"自动检测"选项
@@ -423,9 +426,9 @@ public class SettingsPanel extends JPanel {
             Object selected = fontComboBox.getSelectedItem();
             String selectedFont = selected != null ? selected.toString() : "";
             if ("自动检测（推荐）".equals(selectedFont)) {
-                settings.manager.SettingsManager.setFontFamily("");
+                settingsRepository.setFontFamily("");
             } else {
-                settings.manager.SettingsManager.setFontFamily(selectedFont);
+                settingsRepository.setFontFamily(selectedFont);
             }
             // 清除字体缓存
             app.theme.AppFonts.clearFontCache();
@@ -492,7 +495,7 @@ public class SettingsPanel extends JPanel {
         securityLevelComboBox.setFont(app.theme.AppFonts.getNormalFont());
 
         // 设置当前选择
-        String currentLevel = settings.storage.SettingsStorage.getSecurityLevel();
+        String currentLevel = settingsRepository.getSecurityLevel();
         if (settings.storage.SettingsStorage.SECURITY_LEVEL_STRICT.equals(currentLevel)) {
             securityLevelComboBox.setSelectedIndex(0);
         } else if (settings.storage.SettingsStorage.SECURITY_LEVEL_CONVENIENT.equals(currentLevel)) {
@@ -513,7 +516,7 @@ public class SettingsPanel extends JPanel {
         timeoutComboBox.setFont(app.theme.AppFonts.getNormalFont());
 
         // 设置当前超时选择
-        int currentTimeout = settings.storage.SettingsStorage.getPasswordCacheTimeout();
+        int currentTimeout = settingsRepository.getPasswordCacheTimeout();
         if (currentTimeout == settings.storage.SettingsStorage.TIMEOUT_NEVER) {
             timeoutComboBox.setSelectedIndex(4);
         } else if (currentTimeout == settings.storage.SettingsStorage.TIMEOUT_5_MIN) {
@@ -577,7 +580,7 @@ public class SettingsPanel extends JPanel {
                 // 平衡模式下显示超时设置
                 timeoutPanel.setVisible(true);
             }
-            settings.storage.SettingsStorage.setSecurityLevel(level);
+            settingsRepository.setSecurityLevel(level);
         });
 
         // 超时变化监听器
@@ -600,7 +603,7 @@ public class SettingsPanel extends JPanel {
                 default:
                     timeout = settings.storage.SettingsStorage.TIMEOUT_30_MIN;
             }
-            settings.storage.SettingsStorage.setPasswordCacheTimeout(timeout);
+            settingsRepository.setPasswordCacheTimeout(timeout);
         });
 
         mainPanel.add(securityLevelComboBox, gbc);
@@ -787,7 +790,8 @@ public class SettingsPanel extends JPanel {
         String logFilePath = logDirPath + File.separator + logFileName;
         try {
             // 读取日志文件内容
-            String content = new String(Files.readAllBytes(Paths.get(logFilePath)));
+            String content = new String(Files.readAllBytes(Paths.get(logFilePath)),
+                    java.nio.charset.StandardCharsets.UTF_8);
             
             // 创建日志详情对话框
             JDialog logDialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "日志详情 - " + logFileName, true);
@@ -881,7 +885,7 @@ public class SettingsPanel extends JPanel {
         
         JTextField defaultOutputDirField = new JTextField();
         defaultOutputDirField.setFont(app.theme.AppFonts.getNormalFont());
-        defaultOutputDirField.setText(settings.manager.SettingsManager.getDefaultOutputDirectory());
+        defaultOutputDirField.setText(settingsRepository.getDefaultOutputDirectory());
         defaultOutputDirField.setBorder(ThemeManager.createRoundedBorder(1));
         defaultOutputDirField.putClientProperty("TextField.arc", 12);
         defaultOutputDirField.setEditable(false);
@@ -915,7 +919,7 @@ public class SettingsPanel extends JPanel {
                 File newOutputDir = new File(selectedDir, "output");
                 
                 // 询问是否迁移旧数据
-                String oldDir = settings.manager.SettingsManager.getDefaultOutputDirectory();
+                String oldDir = settingsRepository.getDefaultOutputDirectory();
                 int migrateConfirm = JOptionPane.YES_OPTION;
                 if (oldDir != null && !oldDir.isEmpty() && !oldDir.equals(newOutputDir.getAbsolutePath())) {
                     File oldDirFile = new File(oldDir);
@@ -944,7 +948,7 @@ public class SettingsPanel extends JPanel {
                             copyDirectory(oldDirFile, newOutputDir);
                             
                             // 更新历史记录中的文件路径
-                            int updatedRecords = history.storage.HistoryStorage.updateFilePaths(oldDir, newOutputDir.getAbsolutePath());
+                            int updatedRecords = historyRepository.updateFilePaths(oldDir, newOutputDir.getAbsolutePath());
                             
                             // 询问是否删除旧数据
                             String message;
@@ -975,7 +979,7 @@ public class SettingsPanel extends JPanel {
                 
                 // 更新设置
                 defaultOutputDirField.setText(newOutputDir.getAbsolutePath());
-                settings.manager.SettingsManager.setDefaultOutputDirectory(newOutputDir.getAbsolutePath());
+                settingsRepository.setDefaultOutputDirectory(newOutputDir.getAbsolutePath());
                 JOptionPane.showMessageDialog(this, "默认输出目录已更新！", "提示", JOptionPane.INFORMATION_MESSAGE);
             }
         });
@@ -1114,7 +1118,7 @@ public class SettingsPanel extends JPanel {
                 
                 // 更新设置
                 dataDirField.setText(newDataDir.getAbsolutePath());
-                settings.storage.SettingsStorage.setDataDir(newDataDir.getAbsolutePath());
+                settingsRepository.setDataDir(newDataDir.getAbsolutePath());
                 core.util.RestartHelper.showRestartConfirmDialog(this, "数据目录已更新");
             }
         });
@@ -1172,7 +1176,7 @@ public class SettingsPanel extends JPanel {
         JPanel presetRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 18, 0));
         presetRow.setBackground(app.theme.ThemeManager.getPanelBackgroundColor());
 
-        VolumeLimitPreset currentPreset = SettingsStorage.getVolumeLimitPreset();
+        VolumeLimitPreset currentPreset = settingsRepository.getVolumeLimitPreset();
         for (int i = 0; i < presets.length; i++) {
             final VolumeLimitPreset preset = presets[i];
             JRadioButton radio = new JRadioButton(preset.getLabel());
@@ -1180,7 +1184,7 @@ public class SettingsPanel extends JPanel {
             radio.setForeground(app.theme.ThemeManager.getTextColor());
             radio.setBackground(app.theme.ThemeManager.getPanelBackgroundColor());
             radio.setSelected(preset == currentPreset);
-            radio.addActionListener(e -> SettingsStorage.setVolumeLimitPreset(preset));
+            radio.addActionListener(e -> settingsRepository.setVolumeLimitPreset(preset));
             presetGroup.add(radio);
             presetRow.add(radio);
             presetButtons[i] = radio;
@@ -1208,9 +1212,9 @@ public class SettingsPanel extends JPanel {
         packageDefault.setFont(app.theme.AppFonts.getNormalFont());
         packageDefault.setForeground(app.theme.ThemeManager.getTextColor());
         packageDefault.setBackground(app.theme.ThemeManager.getPanelBackgroundColor());
-        packageDefault.setSelected(SettingsStorage.isPackageMultiFilesDefault());
+        packageDefault.setSelected(settingsRepository.isPackageMultiFilesDefault());
         packageDefault.addActionListener(
-                e -> SettingsStorage.setPackageMultiFilesDefault(packageDefault.isSelected()));
+                e -> settingsRepository.setPackageMultiFilesDefault(packageDefault.isSelected()));
         gbc.gridy++;
         mainPanel.add(packageDefault, gbc);
 
@@ -1229,7 +1233,7 @@ public class SettingsPanel extends JPanel {
 
         JButton resetButton = ThemeManager.createPrimaryButton("恢复默认（500 MB）");
         resetButton.addActionListener(e -> {
-            SettingsStorage.setVolumeLimitPreset(VolumeLimitPreset.DEFAULT);
+            settingsRepository.setVolumeLimitPreset(VolumeLimitPreset.DEFAULT);
             for (int i = 0; i < presets.length; i++) {
                 if (presets[i] == VolumeLimitPreset.DEFAULT) {
                     presetButtons[i].setSelected(true);
@@ -1404,7 +1408,7 @@ public class SettingsPanel extends JPanel {
                     return;
                 }
                 try {
-                    settings.storage.SettingsStorage.exportSettings(exportFile, password);
+                    settingsRepository.exportSettings(exportFile, password);
                     JOptionPane.showMessageDialog(this, "设置已加密导出到: " + exportFile.getAbsolutePath(), "成功", JOptionPane.INFORMATION_MESSAGE);
                 } catch (IOException ex) {
                     JOptionPane.showMessageDialog(this, "导出设置失败: " + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
@@ -1428,13 +1432,13 @@ public class SettingsPanel extends JPanel {
                 File importFile = fileChooser.getSelectedFile();
                 char[] password = null;
                 try {
-                    if (settings.storage.SettingsStorage.isEncryptedExport(importFile)) {
+                    if (settingsRepository.isEncryptedExport(importFile)) {
                         password = ExportPasswordDialog.ask(this, "导入设置", false);
                         if (password == null) {
                             return;
                         }
                     }
-                    settings.storage.SettingsStorage.importSettings(importFile, password);
+                    settingsRepository.importSettings(importFile, password);
                     core.util.RestartHelper.showRestartConfirmDialog(this, "设置导入成功");
                 } catch (IOException ex) {
                     JOptionPane.showMessageDialog(this, ex.getMessage(), "导入失败", JOptionPane.ERROR_MESSAGE);
@@ -1488,7 +1492,7 @@ public class SettingsPanel extends JPanel {
             
             if (confirm == JOptionPane.YES_OPTION) {
                 try {
-                    settings.storage.SettingsStorage.clearAllData(true);
+                    settingsRepository.clearAllData(true);
                     core.util.RestartHelper.showRestartConfirmDialog(this, "所有数据已清除");
                 } catch (Exception ex) {
                     JOptionPane.showMessageDialog(this, "清除数据失败: " + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);

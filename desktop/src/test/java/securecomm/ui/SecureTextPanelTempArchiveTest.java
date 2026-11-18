@@ -27,7 +27,7 @@ public class SecureTextPanelTempArchiveTest {
         assertTrue("登记后应识别为文件夹 ZIP", TempFileManager.isFolderZip(tempZip));
         assertEquals("季度 报告", TempFileManager.getFolderName(tempZip));
         assertEquals("文件夹名应来自内存映射", "季度 报告",
-                SecureTextPanel.folderNameForZip(tempZip));
+                TempFileManager.resolveFolderName(tempZip));
         assertFalse("临时文件名不能包含原文件夹名",
                 tempZip.getName().contains("季度 报告"));
     }

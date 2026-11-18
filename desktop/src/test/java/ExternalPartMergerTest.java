@@ -27,7 +27,6 @@ import java.util.zip.ZipOutputStream;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import volumes.ui.ExternalPartMergeText;
 
 /**
  * 桌面端合并 Android 外部单卷包：齐套、缺卷、混包、重卷、篡改、取消与单卷/旧格式识别。
@@ -199,59 +198,11 @@ public class ExternalPartMergerTest {
     }
 
     @Test
-    public void textExplainsCompleteSet() throws Exception {
-        KeyPair keys = keys();
-        File zip = zip("Photos.zip", "Photos/one.txt", randomText(81, 2000));
-        List<File> parts = writeParts(zip, "set-text-complete", keys);
-
-        ExternalPartMerger.Inspection inspection = ExternalPartMerger.inspect(
-                parts, keys.getPrivate());
-        String text = ExternalPartMergeText.inspection(inspection);
-
-        assertTrue(text.contains("齐套"));
-        assertTrue(text.contains("共 " + parts.size() + " 卷"));
-        assertTrue(text.contains("可以合并"));
-    }
-
-    @Test
-    public void textExplainsMissingPartsAndCounts() throws Exception {
-        KeyPair keys = keys();
-        File zip = zip("Photos.zip", "Photos/one.txt", randomText(82, 2000));
-        List<File> parts = writeParts(zip, "set-text-missing", keys);
-        List<File> incomplete = new ArrayList<File>(parts);
-        incomplete.remove(incomplete.size() - 1);
-
-        ExternalPartMerger.Inspection inspection = ExternalPartMerger.inspect(
-                incomplete, keys.getPrivate());
-        String text = ExternalPartMergeText.inspection(inspection);
-
-        assertTrue(text.contains("缺卷"));
-        assertTrue(text.contains("第 " + parts.size() + " 卷"));
-        assertTrue(text.contains("已收 " + (parts.size() - 1) + "/" + parts.size()));
-    }
-
-    @Test
-    public void textExplainsMixedSets() throws Exception {
-        KeyPair keys = keys();
-        File zipA = zip("A.zip", "A/one.txt", randomText(83, 2000));
-        File zipB = zip("B.zip", "B/one.txt", randomText(84, 2000));
-        List<File> partsA = writeParts(zipA, "set-text-a", keys);
-        List<File> partsB = writeParts(zipB, "set-text-b", keys);
-
-        ExternalPartMerger.Inspection inspection = ExternalPartMerger.inspect(
-                Arrays.asList(partsA.get(0), partsB.get(0)), keys.getPrivate());
-        String text = ExternalPartMergeText.inspection(inspection);
-
-        assertTrue(text.contains("混包"));
-        assertTrue(text.contains("同一个分卷包"));
-    }
-
-    @Test
-    public void textExplainsCancellationWithoutCallingItCorruption() throws Exception {
+    public void cancelledMergeLeavesNoPartialFile() throws Exception {
         KeyPair keys = keys();
         File zip = zip("Photos.zip", "Photos/one.txt", randomText(85, 2000));
-        List<File> parts = writeParts(zip, "set-text-cancel", keys);
-        File outputDir = temporaryFolder.newFolder("text-cancelled");
+        List<File> parts = writeParts(zip, "set-cancel", keys);
+        File outputDir = temporaryFolder.newFolder("cancelled");
 
         try {
             ExternalPartMerger.merge(
@@ -264,8 +215,8 @@ public class ExternalPartMergerTest {
                     new AtomicBoolean(true));
             org.junit.Assert.fail("应当取消合并");
         } catch (ExternalPartMerger.ExternalMergeException error) {
-            assertTrue(ExternalPartMergeText.isCancelled(error));
-            assertEquals("已取消：没有保留半成品。", ExternalPartMergeText.failure(error));
+            assertTrue("取消要说明是取消，而不是损坏",
+                    error.getMessage().contains("已取消"));
         }
         assertEquals(0, outputDir.listFiles().length);
     }
@@ -298,11 +249,53 @@ public class ExternalPartMergerTest {
         return writeParts(zip, setId, keys, VolumePartPlan.HEADER_RESERVE_BYTES + 256L);
     }
 
+    @Test
+    public void folderArchiveMultiSetMergesBackToZipWithRootFolder() throws Exception {
+        KeyPair keys = keys();
+        File zip = zip("Photos.zip",
+                "Photos/one.txt", randomText(86, 4000),
+                "Photos/two.txt", randomText(87, 4000));
+        List<File> parts = writeParts(zip, "set-folder", keys, 5000L, true);
+        assertTrue("夹具应切成多卷", parts.size() > 1);
+
+        ExternalPartMerger.Inspection inspection = ExternalPartMerger.inspect(
+                parts, keys.getPrivate());
+        assertEquals(ExternalPartMerger.Status.COMPLETE, inspection.getStatus());
+
+        File outputDir = temporaryFolder.newFolder("folder-merged");
+        ExternalPartMerger.MergeResult result = ExternalPartMerger.merge(
+                parts,
+                keys.getPrivate(),
+                Collections.singletonList(keys.getPublic()),
+                outputDir,
+                null,
+                null,
+                new AtomicBoolean(false));
+
+        File product = result.getOutput();
+        assertTrue("文件夹来源的合并产物应是 ZIP：" + product.getName(),
+                product.getName().toLowerCase(java.util.Locale.ROOT).endsWith(".zip"));
+        try (java.util.zip.ZipFile archive = new java.util.zip.ZipFile(product)) {
+            assertNotNull("ZIP 根目录应保留原文件夹", archive.getEntry("Photos/one.txt"));
+            assertNotNull(archive.getEntry("Photos/two.txt"));
+        }
+    }
+
     private List<File> writeParts(
             File zip,
             String setId,
             KeyPair keys,
             long volumeLimit
+    ) throws Exception {
+        return writeParts(zip, setId, keys, volumeLimit, false);
+    }
+
+    private List<File> writeParts(
+            File zip,
+            String setId,
+            KeyPair keys,
+            long volumeLimit,
+            boolean archiveSourceIsFolder
     ) throws Exception {
         File outputDir = temporaryFolder.newFolder("parts-" + setId);
         String archiveName = zip.getName();
@@ -324,7 +317,7 @@ public class ExternalPartMergerTest {
                     setId,
                     archiveName,
                     archiveSha,
-                    false,
+                    archiveSourceIsFolder,
                     1,
                     output,
                     keys.getPrivate(),

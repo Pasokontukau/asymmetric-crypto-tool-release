@@ -165,7 +165,7 @@ public class LocalCryptoKeyManager {
     
     private static SecretKey getDerivedKeyForNonWindows() throws Exception {
         String machineId = getMachineIdentifier();
-        byte[] salt = "LocalCryptoKeySalt".getBytes();
+        byte[] salt = "LocalCryptoKeySalt".getBytes(java.nio.charset.StandardCharsets.UTF_8);
         
         javax.crypto.SecretKeyFactory factory = javax.crypto.SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
         javax.crypto.spec.PBEKeySpec spec = new javax.crypto.spec.PBEKeySpec(

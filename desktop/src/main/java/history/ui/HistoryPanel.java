@@ -10,8 +10,6 @@ import core.util.LogManager;
 import history.model.HistoryRecord;
 import history.model.HistoryType;
 import history.model.RecordCategory;
-import history.storage.HistoryExport;
-import history.storage.HistoryStorage;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -26,11 +24,9 @@ import java.awt.datatransfer.StringSelection;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import javax.swing.DefaultListModel;
@@ -62,6 +58,10 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 
 public class HistoryPanel extends JPanel {
+
+    private final history.repository.HistoryRepository historyRepository =
+            new history.repository.HistoryRepository();
+
     
     private JTable historyTable;
     private DefaultTableModel tableModel;
@@ -391,7 +391,7 @@ public class HistoryPanel extends JPanel {
     }
     
     private void loadHistory() {
-        List<HistoryRecord> records = HistoryStorage.loadHistory();
+        List<HistoryRecord> records = historyRepository.loadAll();
         displayRecords(records);
         updateStats(records);
     }
@@ -400,7 +400,7 @@ public class HistoryPanel extends JPanel {
         contactListModel.clear();
         contactListModel.addElement("全部");
         
-        Set<String> contacts = HistoryStorage.loadAllContactsFromHistory();
+        Set<String> contacts = historyRepository.contacts();
         List<String> sortedContacts = new ArrayList<>(contacts);
         Collections.sort(sortedContacts);
         for (String contact : sortedContacts) {
@@ -409,44 +409,40 @@ public class HistoryPanel extends JPanel {
     }
 
     private void filterHistory() {
-        String searchText = searchField.getText();
-        List<HistoryRecord> records;
-        
-        if (searchText != null && !searchText.trim().isEmpty()) {
-            records = HistoryStorage.searchHistory(searchText);
-        } else {
-            records = HistoryStorage.loadHistory();
+        List<HistoryRecord> filtered = filterByType(historyRepository.query(
+                searchField.getText(), currentContactFilter, starFilterActive));
+        displayRecords(filtered);
+        updateStats(filtered);
+    }
+
+    /** 类型筛选：文本/文件 × 加密/解密，与导出共用一份判断。 */
+    private List<HistoryRecord> filterByType(List<HistoryRecord> records) {
+        if (currentTypeFilter == null) {
+            return records;
         }
-        
-        if (currentContactFilter != null) {
-            records = HistoryStorage.loadHistoryByContact(currentContactFilter);
+        return records.stream()
+                .filter(this::matchesTypeFilter)
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+    private boolean matchesTypeFilter(HistoryRecord record) {
+        if ("文本加密".equals(currentTypeFilter)) {
+            return record.getType() == HistoryType.ENCRYPT
+                    && record.getCategory() == RecordCategory.TEXT;
         }
-        
-        if (currentTypeFilter != null) {
-            records = records.stream()
-                    .filter(r -> {
-                        if ("文本加密".equals(currentTypeFilter)) {
-                            return r.getType() == HistoryType.ENCRYPT && r.getCategory() == RecordCategory.TEXT;
-                        } else if ("文本解密".equals(currentTypeFilter)) {
-                            return r.getType() == HistoryType.DECRYPT && r.getCategory() == RecordCategory.TEXT;
-                        } else if ("文件加密".equals(currentTypeFilter)) {
-                            return r.getType() == HistoryType.ENCRYPT && r.getCategory() == RecordCategory.BATCH;
-                        } else if ("文件解密".equals(currentTypeFilter)) {
-                            return r.getType() == HistoryType.DECRYPT && r.getCategory() == RecordCategory.BATCH;
-                        }
-                        return true;
-                    })
-                    .collect(java.util.stream.Collectors.toList());
+        if ("文本解密".equals(currentTypeFilter)) {
+            return record.getType() == HistoryType.DECRYPT
+                    && record.getCategory() == RecordCategory.TEXT;
         }
-        
-        if (starFilterActive) {
-            records = records.stream()
-                    .filter(HistoryRecord::isStarred)
-                    .collect(java.util.stream.Collectors.toList());
+        if ("文件加密".equals(currentTypeFilter)) {
+            return record.getType() == HistoryType.ENCRYPT
+                    && record.getCategory() == RecordCategory.BATCH;
         }
-        
-        displayRecords(records);
-        updateStats(records);
+        if ("文件解密".equals(currentTypeFilter)) {
+            return record.getType() == HistoryType.DECRYPT
+                    && record.getCategory() == RecordCategory.BATCH;
+        }
+        return true;
     }
     
     /**
@@ -685,7 +681,7 @@ public class HistoryPanel extends JPanel {
         JButton starButton = ThemeManager.createPrimaryButton(record.isStarred() ? "已收藏" : "收藏");
         starButton.addActionListener(e -> {
             boolean newStarred = !record.isStarred();
-            HistoryStorage.setStarred(record.getId(), newStarred);
+            historyRepository.setStarred(record.getId(), newStarred);
             record.setStarred(newStarred);
             starButton.setText(newStarred ? "已收藏" : "收藏");
             loadHistory();
@@ -696,7 +692,7 @@ public class HistoryPanel extends JPanel {
         deleteButton.addActionListener(e -> {
             int option = JOptionPane.showConfirmDialog(dialog, "确定要删除这条记录吗？", "确认", JOptionPane.YES_NO_OPTION);
             if (option == JOptionPane.YES_OPTION) {
-                HistoryStorage.deleteHistoryRecord(record.getId());
+                historyRepository.delete(record.getId());
                 dialog.dispose();
                 loadHistory();
             }
@@ -707,7 +703,7 @@ public class HistoryPanel extends JPanel {
         closeButton.addActionListener(e -> {
             String notes = notesTextArea.getText();
             if (!notes.isEmpty() || record.getNotes() != null) {
-                HistoryStorage.addNotes(record.getId(), notes.isEmpty() ? null : notes);
+                historyRepository.addNotes(record.getId(), notes.isEmpty() ? null : notes);
             }
             dialog.dispose();
             loadHistory();
@@ -1180,7 +1176,7 @@ public class HistoryPanel extends JPanel {
         if (row < 0) return;
         HistoryRecord record = getRecordAtRow(row);
         if (record != null) {
-            HistoryStorage.setStarred(record.getId(), !record.isStarred());
+            historyRepository.setStarred(record.getId(), !record.isStarred());
             loadHistory();
         }
     }
@@ -1249,7 +1245,7 @@ public class HistoryPanel extends JPanel {
         
         String notes = JOptionPane.showInputDialog(this, "添加备注:", record.getNotes());
         if (notes != null) {
-            HistoryStorage.addNotes(record.getId(), notes.isEmpty() ? null : notes);
+            historyRepository.addNotes(record.getId(), notes.isEmpty() ? null : notes);
             loadHistory();
         }
     }
@@ -1262,7 +1258,7 @@ public class HistoryPanel extends JPanel {
         
         int option = JOptionPane.showConfirmDialog(this, "确定要删除这条记录吗？", "确认", JOptionPane.YES_NO_OPTION);
         if (option == JOptionPane.YES_OPTION) {
-            HistoryStorage.deleteHistoryRecord(record.getId());
+            historyRepository.delete(record.getId());
             loadHistory();
         }
     }
@@ -1318,67 +1314,9 @@ public class HistoryPanel extends JPanel {
         if (userSelection == JFileChooser.APPROVE_OPTION) {
             File fileToSave = fileChooser.getSelectedFile();
             try {
-                List<HistoryRecord> recordsToExport;
-                // 获取当前筛选后的记录
-                if (starFilterActive) {
-                    recordsToExport = HistoryStorage.loadStarredHistory();
-                    if (currentTypeFilter != null) {
-                        recordsToExport = recordsToExport.stream()
-                                .filter(r -> {
-                                    if ("文本加密".equals(currentTypeFilter)) {
-                                        return r.getType() == HistoryType.ENCRYPT && r.getCategory() == RecordCategory.TEXT;
-                                    } else if ("文本解密".equals(currentTypeFilter)) {
-                                        return r.getType() == HistoryType.DECRYPT && r.getCategory() == RecordCategory.TEXT;
-                                    } else if ("文件加密".equals(currentTypeFilter)) {
-                                        return r.getType() == HistoryType.ENCRYPT && r.getCategory() == RecordCategory.BATCH;
-                                    } else if ("文件解密".equals(currentTypeFilter)) {
-                                        return r.getType() == HistoryType.DECRYPT && r.getCategory() == RecordCategory.BATCH;
-                                    }
-                                    return true;
-                                })
-                                .collect(java.util.stream.Collectors.toList());
-                    }
-                    if (currentContactFilter != null) {
-                        recordsToExport = recordsToExport.stream()
-                                .filter(r -> Objects.equals(r.getContactName(), currentContactFilter))
-                                .collect(java.util.stream.Collectors.toList());
-                    }
-                } else if (currentContactFilter != null) {
-                    recordsToExport = HistoryStorage.loadHistoryByContact(currentContactFilter);
-                    if (currentTypeFilter != null) {
-                        recordsToExport = recordsToExport.stream()
-                                .filter(r -> {
-                                    if ("文本加密".equals(currentTypeFilter)) {
-                                        return r.getType() == HistoryType.ENCRYPT && r.getCategory() == RecordCategory.TEXT;
-                                    } else if ("文本解密".equals(currentTypeFilter)) {
-                                        return r.getType() == HistoryType.DECRYPT && r.getCategory() == RecordCategory.TEXT;
-                                    } else if ("文件加密".equals(currentTypeFilter)) {
-                                        return r.getType() == HistoryType.ENCRYPT && r.getCategory() == RecordCategory.BATCH;
-                                    } else if ("文件解密".equals(currentTypeFilter)) {
-                                        return r.getType() == HistoryType.DECRYPT && r.getCategory() == RecordCategory.BATCH;
-                                    }
-                                    return true;
-                                })
-                                .collect(java.util.stream.Collectors.toList());
-                    }
-                } else if (currentTypeFilter != null) {
-                    recordsToExport = HistoryStorage.loadHistory().stream()
-                            .filter(r -> {
-                                if ("文本加密".equals(currentTypeFilter)) {
-                                    return r.getType() == HistoryType.ENCRYPT && r.getCategory() == RecordCategory.TEXT;
-                                } else if ("文本解密".equals(currentTypeFilter)) {
-                                    return r.getType() == HistoryType.DECRYPT && r.getCategory() == RecordCategory.TEXT;
-                                } else if ("文件加密".equals(currentTypeFilter)) {
-                                    return r.getType() == HistoryType.ENCRYPT && r.getCategory() == RecordCategory.BATCH;
-                                } else if ("文件解密".equals(currentTypeFilter)) {
-                                    return r.getType() == HistoryType.DECRYPT && r.getCategory() == RecordCategory.BATCH;
-                                }
-                                return true;
-                            })
-                            .collect(java.util.stream.Collectors.toList());
-                } else {
-                    recordsToExport = HistoryStorage.loadHistory();
-                }
+                // 与列表一致：收藏 + 联系人，再套类型筛选
+                List<HistoryRecord> recordsToExport = filterByType(
+                        historyRepository.query(null, currentContactFilter, starFilterActive));
                 
                 if (encrypted) {
                     char[] password = ExportPasswordDialog.ask(this, "导出历史记录", true);
@@ -1386,27 +1324,27 @@ public class HistoryPanel extends JPanel {
                         return;
                     }
                     try {
-                        HistoryExport.writeEncrypted(fileToSave, recordsToExport, password);
+                        historyRepository.writeEncrypted(fileToSave, recordsToExport, password);
                     } finally {
                         java.util.Arrays.fill(password, '\0');
                     }
                     JOptionPane.showMessageDialog(this, "历史记录已加密导出到: " + fileToSave.getAbsolutePath());
                 } else {
-                    String content;
+                    history.repository.HistoryRepository.Format format;
                     switch (choice) {
                         case 1:
-                            content = HistoryExport.toJson(recordsToExport);
+                            format = history.repository.HistoryRepository.Format.JSON;
                             break;
                         case 2:
-                            content = HistoryExport.toCsv(recordsToExport);
+                            format = history.repository.HistoryRepository.Format.CSV;
                             break;
                         case 3:
-                            content = HistoryExport.toHtml(recordsToExport);
+                            format = history.repository.HistoryRepository.Format.HTML;
                             break;
                         default:
                             throw new IllegalStateException("未知导出格式: " + choice);
                     }
-                    java.nio.file.Files.write(fileToSave.toPath(), content.getBytes("UTF-8"));
+                    historyRepository.writePlain(fileToSave, recordsToExport, format);
                     JOptionPane.showMessageDialog(this, "导出成功！文件已保存到: " + fileToSave.getAbsolutePath());
                 }
             } catch (Exception e) {
@@ -1420,7 +1358,7 @@ public class HistoryPanel extends JPanel {
         int option = JOptionPane.showConfirmDialog(this, "确定要清空所有历史记录吗？此操作不可恢复！", 
             "警告", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
         if (option == JOptionPane.YES_OPTION) {
-            HistoryStorage.clearHistory();
+            historyRepository.clear();
             loadHistory();
         }
     }

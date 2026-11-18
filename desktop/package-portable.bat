@@ -1,5 +1,5 @@
 @echo off
-chcp 936 >nul
+chcp 65001 >nul
 setlocal EnableExtensions
 
 echo ========================================
@@ -14,6 +14,9 @@ set "MVN=%MAVEN_HOME%\bin\mvn.cmd"
 if not exist "%MVN%" set "MVN="
 if not defined MVN if exist "%USERPROFILE%\.trae-cn\tools\maven\latest\bin\mvn.cmd" set "MVN=%USERPROFILE%\.trae-cn\tools\maven\latest\bin\mvn.cmd"
 if not defined MVN for /f "delims=" %%i in ('where mvn 2^>nul') do set "MVN=%%i"
+rem Maven prints Chinese paths and Javac warnings with the JVM default charset;
+rem force UTF-8 so chcp 65001 consoles and redirected logs stay readable.
+set "MAVEN_OPTS=%MAVEN_OPTS% -Dfile.encoding=UTF-8"
 if not defined MVN (
     echo ERROR: Maven not found.
     echo   Install Maven, or set MAVEN_HOME, or add mvn.cmd to PATH.
@@ -37,11 +40,11 @@ echo Maven:   %MVN%
 echo.
 
 REM ---------- shared crypto-core ----------
-REM monorepo 中先发布最新内核；独立桌面仓库没有这些目录时跳过。
+REM Monorepo: publish the shared kernel first; skip when those folders are absent.
 if exist "..\android\gradlew.bat" (
     echo Publishing shared crypto-core to Maven Local...
     pushd "..\android"
-    call ".\gradlew.bat" -Dorg.gradle.jvmargs="-Xmx2048m -Dfile.encoding=GBK" :crypto-core:publishToMavenLocal
+    call ".\gradlew.bat" -Dorg.gradle.jvmargs="-Xmx2048m -Dfile.encoding=UTF-8" :crypto-core:publishToMavenLocal
     if errorlevel 1 (
         popd
         echo ERROR: Failed to publish shared crypto-core.
@@ -98,7 +101,7 @@ if errorlevel 1 (
 
 REM ---------- app image ----------
 echo [4/5] Building app-image with jpackage...
-"%JAVA_HOME%\bin\jpackage.exe" --type app-image --input "%CD%\%PORTABLE%\input" --main-jar cryptoassistant.jar --main-class app.AppMain --name CryptoAssistant --app-version %APP_VERSION% --vendor CryptoAssistant --icon "%CD%\%PORTABLE%\app.ico" --runtime-image "%CD%\%PORTABLE%\runtime" --java-options "-Dapp.home=$BINDIR" --dest "%CD%\%PORTABLE%"
+"%JAVA_HOME%\bin\jpackage.exe" --type app-image --input "%CD%\%PORTABLE%\input" --main-jar cryptoassistant.jar --main-class app.AppMain --name CryptoAssistant --app-version %APP_VERSION% --vendor CryptoAssistant --icon "%CD%\%PORTABLE%\app.ico" --runtime-image "%CD%\%PORTABLE%\runtime" --java-options "-Dapp.home=$BINDIR" --java-options "-Dfile.encoding=UTF-8" --dest "%CD%\%PORTABLE%"
 if errorlevel 1 (
     echo ERROR: jpackage failed.
     exit /b 1

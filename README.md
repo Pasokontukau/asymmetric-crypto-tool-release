@@ -7,6 +7,10 @@
 ![首页（深色）](docs/screenshots/home-dark.png)
 ![加密结果](docs/screenshots/result-saved.png)
 
+## 下载
+
+预编译 APK、Windows 便携 ZIP 与安装器通过本仓库的 Releases 分发；源码仓库不提交二进制。
+
 ## 功能
 
 - **单文件加解密**：随机生成 256 位 AES 密钥，用接收方 RSA 公钥以 OAEP 包装；内容走 AES-256-GCM，`SHA256withRSA` 对明文签名。流式读写，不整体载入大文件。
