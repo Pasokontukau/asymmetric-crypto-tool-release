@@ -450,34 +450,103 @@
   color: var(--muted);
 }
 
-.screens-grid-desktop {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+/* 桌面端：大图舞台 + 缩略图切换（横图不适合两列卡片） */
+.desktop-gallery {
+  display: grid;
+  gap: 12px;
 }
 
-.desktop-card {
-  align-items: stretch;
-  gap: 16px;
-  padding: 20px 18px 18px;
+.desktop-stage {
+  margin: 0;
+  padding: 18px;
+  background:
+    radial-gradient(ellipse 60% 50% at 50% 0%, rgba(123, 134, 255, 0.12), transparent 70%),
+    rgba(255, 255, 255, 0.022);
+  border: 1px solid var(--line);
+  border-radius: 22px;
 }
 
-.desktop-shot {
+.desktop-stage .desktop-shot,
+.desktop-thumb .desktop-shot {
+  display: block;
   overflow: hidden;
   background: #05070b;
   border: 1px solid var(--line);
-  border-radius: 14px;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+  border-radius: 12px;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5);
 }
 
+/* 保持低特异性（0,1,1），让上面的 .desktop-shot .shot-light 隐藏规则能生效 */
 .desktop-shot img {
   display: block;
   width: 100%;
   height: auto;
 }
 
-.desktop-card figcaption {
-  padding-top: 0;
-  border-top: 0;
+.desktop-stage figcaption {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 12px;
+  margin-top: 16px;
+}
+
+.desktop-stage figcaption strong {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.03em;
+}
+
+.desktop-stage figcaption span {
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.6;
+}
+
+.desktop-thumbs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.desktop-thumb {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
   text-align: left;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.022);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  cursor: pointer;
+  transition: border-color 0.18s ease, background 0.18s ease, transform 0.18s ease;
+}
+
+.desktop-thumb:hover {
+  border-color: var(--line-strong);
+  transform: translateY(-2px);
+}
+
+.desktop-thumb.is-active {
+  border-color: var(--accent);
+  background: rgba(123, 134, 255, 0.08);
+}
+
+.desktop-thumb .desktop-shot {
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+.desktop-thumb-label {
+  padding: 0 2px;
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.03em;
+}
+
+.desktop-thumb.is-active .desktop-thumb-label {
+  color: var(--text);
 }
 
 /* ---------- 桌面端访客：首屏换成桌面端截图 ---------- */
@@ -521,8 +590,12 @@
 }
 
 @media (max-width: 860px) {
-  .screens-grid-desktop {
-    grid-template-columns: 1fr;
+  .desktop-stage {
+    padding: 12px;
+  }
+
+  .desktop-thumbs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 

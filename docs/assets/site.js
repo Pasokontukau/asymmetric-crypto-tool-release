@@ -8,6 +8,41 @@
 
   var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  /* ---------- 桌面画廊：缩略图切换舞台大图 ---------- */
+  function initDesktopGallery() {
+    var gallery = document.querySelector('[data-desktop-gallery]');
+    if (!gallery) {
+      return;
+    }
+    var thumbs = gallery.querySelectorAll('.desktop-thumb');
+    var stageDark = gallery.querySelector('[data-stage="dark"]');
+    var stageLight = gallery.querySelector('[data-stage="light"]');
+    var title = gallery.querySelector('[data-stage-title]');
+    var note = gallery.querySelector('[data-stage-note]');
+    if (!stageDark || !stageLight || !thumbs.length) {
+      return;
+    }
+    Array.prototype.forEach.call(thumbs, function (thumb) {
+      thumb.addEventListener('click', function () {
+        Array.prototype.forEach.call(thumbs, function (other) {
+          var active = other === thumb;
+          other.classList.toggle('is-active', active);
+          other.setAttribute('aria-pressed', active ? 'true' : 'false');
+        });
+        stageDark.src = thumb.getAttribute('data-dark');
+        stageLight.src = thumb.getAttribute('data-light');
+        stageDark.alt = thumb.getAttribute('data-alt-dark') || '';
+        stageLight.alt = thumb.getAttribute('data-alt-light') || '';
+        if (title) {
+          title.textContent = thumb.getAttribute('data-title') || '';
+        }
+        if (note) {
+          note.textContent = thumb.getAttribute('data-note') || '';
+        }
+      });
+    });
+  }
+
   /* ---------- 桌面截图深/浅切换（仅当前会话，不写入任何存储） ---------- */
   function initShotToggle() {
     var toggle = document.querySelector('.shot-toggle');
@@ -196,6 +231,7 @@
     counters.forEach(function (el) { co.observe(el); });
   }
 
+  initDesktopGallery();
   initShotToggle();
 
   /* ---------- 顶部滚动进度 ---------- */

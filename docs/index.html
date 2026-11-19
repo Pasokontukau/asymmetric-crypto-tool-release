@@ -431,38 +431,71 @@
         <div class="screens-groups" data-shot-theme="dark">
           <section class="screens-group" data-screens-group="desktop" aria-label="Windows 桌面端界面">
             <h3 class="screens-group-title">Windows 桌面端 <span>1.4.0 · 深色与浅色</span></h3>
-            <div class="screens-grid screens-grid-desktop">
-              <figure class="screen-card desktop-card" data-reveal>
+            <div class="desktop-gallery" data-desktop-gallery>
+              <figure class="desktop-stage" data-reveal>
                 <div class="desktop-shot">
-                  <img class="shot-dark" src="screenshots/desktop-keys.png" width="1200" height="840" alt="Windows 桌面端密钥对管理界面（深色），列出本地密钥的名称、创建时间、密钥长度与指纹" loading="lazy">
-                  <img class="shot-light" src="screenshots/desktop-keys-light.png" width="1200" height="840" alt="Windows 桌面端密钥对管理界面（浅色）" loading="lazy">
+                  <img class="shot-dark" data-stage="dark" src="screenshots/desktop-keys.png" width="1200" height="840" alt="Windows 桌面端密钥对管理界面（深色），列出本地密钥的名称、创建时间、密钥长度与指纹">
+                  <img class="shot-light" data-stage="light" src="screenshots/desktop-keys-light.png" width="1200" height="840" alt="Windows 桌面端密钥对管理界面（浅色）" loading="lazy">
                 </div>
-                <figcaption><strong>密钥对管理</strong><span>本地生成 RSA-4096；公钥可导出给人，私钥加密后存放在本地目录。</span></figcaption>
+                <figcaption>
+                  <strong data-stage-title>密钥对管理</strong>
+                  <span data-stage-note>本地生成 RSA-4096；公钥可导出给人，私钥加密后存放在本地目录。</span>
+                </figcaption>
               </figure>
 
-              <figure class="screen-card desktop-card" data-reveal style="--d:80ms">
-                <div class="desktop-shot">
-                  <img class="shot-dark" src="screenshots/desktop-secure-text.png" width="1200" height="840" alt="Windows 桌面端安全通信界面（深色），左侧输入区已填入演示文本，右侧为输出区" loading="lazy">
-                  <img class="shot-light" src="screenshots/desktop-secure-text-light.png" width="1200" height="840" alt="Windows 桌面端安全通信界面（浅色）" loading="lazy">
-                </div>
-                <figcaption><strong>安全通信</strong><span>选联系人、贴文本，一次完成加密与签名；输出区给的是可直接粘贴的密文。</span></figcaption>
-              </figure>
+              <div class="desktop-thumbs" aria-label="桌面端功能页">
+                <button type="button" class="desktop-thumb is-active" aria-pressed="true"
+                        data-dark="screenshots/desktop-keys.png" data-light="screenshots/desktop-keys-light.png"
+                        data-title="密钥对管理"
+                        data-note="本地生成 RSA-4096；公钥可导出给人，私钥加密后存放在本地目录。"
+                        data-alt-dark="Windows 桌面端密钥对管理界面（深色）"
+                        data-alt-light="Windows 桌面端密钥对管理界面（浅色）">
+                  <span class="desktop-shot">
+                    <img class="shot-dark" src="screenshots/desktop-keys.png" alt="" loading="lazy">
+                    <img class="shot-light" src="screenshots/desktop-keys-light.png" alt="" loading="lazy">
+                  </span>
+                  <span class="desktop-thumb-label">密钥对管理</span>
+                </button>
 
-              <figure class="screen-card desktop-card" data-reveal style="--d:160ms">
-                <div class="desktop-shot">
-                  <img class="shot-dark" src="screenshots/desktop-contacts.png" width="1200" height="840" alt="Windows 桌面端通讯录（深色），列出联系人的指纹、密钥长度与绑定的私钥" loading="lazy">
-                  <img class="shot-light" src="screenshots/desktop-contacts-light.png" width="1200" height="840" alt="Windows 桌面端通讯录（浅色）" loading="lazy">
-                </div>
-                <figcaption><strong>通讯录</strong><span>按指纹核对联系人公钥，绑上自己的私钥后可直接签名与验证。</span></figcaption>
-              </figure>
+                <button type="button" class="desktop-thumb" aria-pressed="false"
+                        data-dark="screenshots/desktop-secure-text.png" data-light="screenshots/desktop-secure-text-light.png"
+                        data-title="安全通信"
+                        data-note="选联系人、贴文本，一次完成加密与签名；输出区给的是可直接粘贴的密文。"
+                        data-alt-dark="Windows 桌面端安全通信界面（深色），左侧输入区已填入演示文本，右侧为输出区"
+                        data-alt-light="Windows 桌面端安全通信界面（浅色）">
+                  <span class="desktop-shot">
+                    <img class="shot-dark" src="screenshots/desktop-secure-text.png" alt="" loading="lazy">
+                    <img class="shot-light" src="screenshots/desktop-secure-text-light.png" alt="" loading="lazy">
+                  </span>
+                  <span class="desktop-thumb-label">安全通信</span>
+                </button>
 
-              <figure class="screen-card desktop-card" data-reveal style="--d:240ms">
-                <div class="desktop-shot">
-                  <img class="shot-dark" src="screenshots/desktop-stego.png" width="1200" height="840" alt="Windows 桌面端隐写工具（深色），选择载体图片与密钥对后嵌入文本" loading="lazy">
-                  <img class="shot-light" src="screenshots/desktop-stego-light.png" width="1200" height="840" alt="Windows 桌面端隐写工具（浅色）" loading="lazy">
-                </div>
-                <figcaption><strong>隐写工具（实验性）</strong><span>把密文嵌进 PNG/BMP 的像素里，文件打开仍是普通图片。</span></figcaption>
-              </figure>
+                <button type="button" class="desktop-thumb" aria-pressed="false"
+                        data-dark="screenshots/desktop-contacts.png" data-light="screenshots/desktop-contacts-light.png"
+                        data-title="通讯录"
+                        data-note="按指纹核对联系人公钥，绑上自己的私钥后可直接签名与验证。"
+                        data-alt-dark="Windows 桌面端通讯录（深色），列出联系人的指纹、密钥长度与绑定的私钥"
+                        data-alt-light="Windows 桌面端通讯录（浅色）">
+                  <span class="desktop-shot">
+                    <img class="shot-dark" src="screenshots/desktop-contacts.png" alt="" loading="lazy">
+                    <img class="shot-light" src="screenshots/desktop-contacts-light.png" alt="" loading="lazy">
+                  </span>
+                  <span class="desktop-thumb-label">通讯录</span>
+                </button>
+
+                <button type="button" class="desktop-thumb" aria-pressed="false"
+                        data-dark="screenshots/desktop-stego.png" data-light="screenshots/desktop-stego-light.png"
+                        data-title="隐写工具（实验性）"
+                        data-note="把密文嵌进 PNG/BMP 的像素里，文件打开仍是普通图片。"
+                        data-alt-dark="Windows 桌面端隐写工具（深色），选择载体图片与密钥对后嵌入文本"
+                        data-alt-light="Windows 桌面端隐写工具（浅色）">
+                  <span class="desktop-shot">
+                    <img class="shot-dark" src="screenshots/desktop-stego.png" alt="" loading="lazy">
+                    <img class="shot-light" src="screenshots/desktop-stego-light.png" alt="" loading="lazy">
+                  </span>
+                  <span class="desktop-thumb-label">隐写工具</span>
+                </button>
+              </div>
             </div>
           </section>
 
