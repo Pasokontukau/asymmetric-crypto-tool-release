@@ -423,3 +423,105 @@
     transition: none;
   }
 }
+
+/* ---------- 界面截图分组：按设备决定先看哪一端 ---------- */
+.screens-groups {
+  display: grid;
+  gap: 38px;
+}
+
+.screens-group-title {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 0 0 16px;
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.screens-group-title span {
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  color: var(--muted);
+}
+
+.screens-grid-desktop {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.desktop-card {
+  align-items: stretch;
+  gap: 16px;
+  padding: 20px 18px 18px;
+}
+
+.desktop-shot {
+  overflow: hidden;
+  background: #05070b;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+}
+
+.desktop-shot img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.desktop-card figcaption {
+  padding-top: 0;
+  border-top: 0;
+  text-align: left;
+}
+
+/* ---------- 桌面端访客：首屏换成桌面端截图 ---------- */
+.desktop-hero,
+.hero-proof-desktop {
+  display: none;
+}
+
+[data-platform="windows"] .phone-hero,
+[data-platform="windows"] .hero-proof-android {
+  display: none;
+}
+
+[data-platform="windows"] .desktop-hero {
+  display: block;
+  position: relative;
+  z-index: 1;
+  width: min(460px, 88vw);
+  margin: 0;
+  padding: 7px;
+  background: linear-gradient(145deg, #32394c, #0b0e15 38%, #1a2030);
+  border: 1px solid rgba(255, 255, 255, 0.19);
+  border-radius: 16px;
+  box-shadow: 0 40px 90px rgba(0, 0, 0, 0.55);
+}
+
+.desktop-hero-screen {
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+}
+
+.desktop-hero-screen img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+[data-platform="windows"] .hero-proof-desktop {
+  display: flex;
+}
+
+@media (max-width: 860px) {
+  .screens-grid-desktop {
+    grid-template-columns: 1fr;
+  }
+}

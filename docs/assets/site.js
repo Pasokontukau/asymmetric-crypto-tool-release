@@ -25,6 +25,19 @@
   }
   document.documentElement.setAttribute('data-platform', platform);
 
+  /* 截图分组按设备排序：Android 访客先看 Android，其余先看桌面端 */
+  (function orderScreenGroups() {
+    var groups = document.querySelector('.screens-groups');
+    if (!groups) {
+      return;
+    }
+    var preferred = platform === 'android' ? 'android' : 'desktop';
+    var target = groups.querySelector('[data-screens-group="' + preferred + '"]');
+    if (target && target !== groups.firstElementChild) {
+      groups.insertBefore(target, groups.firstElementChild);
+    }
+  })();
+
   var picks = {
     android: {
       href: APK,

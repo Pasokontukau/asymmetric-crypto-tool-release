@@ -79,7 +79,7 @@
           </ul>
         </div>
 
-        <div class="hero-visual" aria-label="加密助手 Android 首页截图">
+        <div class="hero-visual" aria-label="加密助手界面截图">
           <div class="hero-orbit hero-orbit-one" aria-hidden="true"></div>
           <div class="hero-orbit hero-orbit-two" aria-hidden="true"></div>
           <figure class="phone phone-hero">
@@ -87,11 +87,22 @@
               <img src="screenshots/home-dark.png" width="1080" height="2400" alt="加密助手 Android 首页，显示本机密钥和加密文件入口" fetchpriority="high">
             </div>
           </figure>
-          <div class="hero-proof">
+          <figure class="desktop-hero">
+            <div class="desktop-hero-screen">
+              <img src="screenshots/desktop-keys.png" width="1200" height="840" alt="加密助手 Windows 桌面端密钥对管理界面" fetchpriority="high">
+            </div>
+          </figure>
+          <div class="hero-proof hero-proof-android">
             <span class="proof-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" focusable="false"><path d="M12 3.5 20 6.7v5.1c0 5-3.3 8.7-8 10.7-4.7-2-8-5.7-8-10.7V6.7L12 3.5Z" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="m8.6 12 2.2 2.2 4.6-4.7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </span>
             <span><strong>0 个网络权限</strong><small>Android 清单没有 INTERNET</small></span>
+          </div>
+          <div class="hero-proof hero-proof-desktop">
+            <span class="proof-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false"><path d="M12 3.5 20 6.7v5.1c0 5-3.3 8.7-8 10.7-4.7-2-8-5.7-8-10.7V6.7L12 3.5Z" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="m8.6 12 2.2 2.2 4.6-4.7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+            <span><strong>数据留在本机</strong><small>密钥与明文都只写本地目录</small></span>
           </div>
         </div>
       </div>
@@ -412,24 +423,62 @@
           <p class="section-lead">没有账户体系，没有信息流。打开就是密钥与文件操作，结果页会明确告诉你文件去了哪里、下一步能做什么。</p>
         </div>
 
-        <div class="screens-grid">
-          <figure class="screen-card" data-reveal>
-            <div class="phone phone-shot">
-              <div class="phone-screen">
-                <img src="screenshots/home-dark.png" width="1080" height="2400" alt="深色主题的加密助手首页" loading="lazy">
-              </div>
-            </div>
-            <figcaption><strong>首页 · 深色</strong><span>密钥、加密文件与解密文件，一屏可达。</span></figcaption>
-          </figure>
+        <div class="screens-groups">
+          <section class="screens-group" data-screens-group="desktop" aria-label="Windows 桌面端界面">
+            <h3 class="screens-group-title">Windows 桌面端 <span>1.4.0 · 深色主题</span></h3>
+            <div class="screens-grid screens-grid-desktop">
+              <figure class="screen-card desktop-card" data-reveal>
+                <div class="desktop-shot">
+                  <img src="screenshots/desktop-keys.png" width="1200" height="840" alt="Windows 桌面端密钥对管理界面，列出本地密钥的名称、创建时间、密钥长度与指纹" loading="lazy">
+                </div>
+                <figcaption><strong>密钥对管理</strong><span>本地生成 RSA-4096；公钥可导出给人，私钥加密后存放在本地目录。</span></figcaption>
+              </figure>
 
-          <figure class="screen-card screen-card-light" data-reveal style="--d:80ms">
-            <div class="phone phone-shot">
-              <div class="phone-screen">
-                <img src="screenshots/result-saved.png" width="1080" height="2400" alt="加密完成结果页，显示密文文件名、大小与接收方" loading="lazy">
-              </div>
+              <figure class="screen-card desktop-card" data-reveal style="--d:80ms">
+                <div class="desktop-shot">
+                  <img src="screenshots/desktop-secure-text.png" width="1200" height="840" alt="Windows 桌面端安全通信界面，左侧输入区已填入演示文本，右侧为输出区" loading="lazy">
+                </div>
+                <figcaption><strong>安全通信</strong><span>选联系人、贴文本，一次完成加密与签名；输出区给的是可直接粘贴的密文。</span></figcaption>
+              </figure>
+
+              <figure class="screen-card desktop-card" data-reveal style="--d:160ms">
+                <div class="desktop-shot">
+                  <img src="screenshots/desktop-contacts.png" width="1200" height="840" alt="Windows 桌面端通讯录，列出联系人的指纹、密钥长度与绑定的私钥" loading="lazy">
+                </div>
+                <figcaption><strong>通讯录</strong><span>按指纹核对联系人公钥，绑上自己的私钥后可直接签名与验证。</span></figcaption>
+              </figure>
+
+              <figure class="screen-card desktop-card" data-reveal style="--d:240ms">
+                <div class="desktop-shot">
+                  <img src="screenshots/desktop-stego.png" width="1200" height="840" alt="Windows 桌面端隐写工具，选择载体图片与密钥对后嵌入文本" loading="lazy">
+                </div>
+                <figcaption><strong>隐写工具（实验性）</strong><span>把密文嵌进 PNG/BMP 的像素里，文件打开仍是普通图片。</span></figcaption>
+              </figure>
             </div>
-            <figcaption><strong>加密结果 · 浅色</strong><span>密文文件名不含原文件名，结果页说明保存与分享边界。</span></figcaption>
-          </figure>
+          </section>
+
+          <section class="screens-group" data-screens-group="android" aria-label="Android 界面">
+            <h3 class="screens-group-title">Android 端 <span>1.4.0 · 深色与浅色</span></h3>
+            <div class="screens-grid">
+              <figure class="screen-card" data-reveal>
+                <div class="phone phone-shot">
+                  <div class="phone-screen">
+                    <img src="screenshots/home-dark.png" width="1080" height="2400" alt="深色主题的加密助手首页" loading="lazy">
+                  </div>
+                </div>
+                <figcaption><strong>首页 · 深色</strong><span>密钥、加密文件与解密文件，一屏可达。</span></figcaption>
+              </figure>
+
+              <figure class="screen-card screen-card-light" data-reveal style="--d:80ms">
+                <div class="phone phone-shot">
+                  <div class="phone-screen">
+                    <img src="screenshots/result-saved.png" width="1080" height="2400" alt="加密完成结果页，显示密文文件名、大小与接收方" loading="lazy">
+                  </div>
+                </div>
+                <figcaption><strong>加密结果 · 浅色</strong><span>密文文件名不含原文件名，结果页说明保存与分享边界。</span></figcaption>
+              </figure>
+            </div>
+          </section>
         </div>
       </div>
     </section>
