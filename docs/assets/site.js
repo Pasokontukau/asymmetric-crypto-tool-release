@@ -8,6 +8,29 @@
 
   var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  /* ---------- 桌面截图深/浅切换（仅当前会话，不写入任何存储） ---------- */
+  function initShotToggle() {
+    var toggle = document.querySelector('.shot-toggle');
+    var groups = document.querySelector('.screens-groups');
+    if (!toggle || !groups) {
+      return;
+    }
+    var buttons = toggle.querySelectorAll('button[data-shot-theme]');
+    toggle.addEventListener('click', function (event) {
+      var button = event.target.closest ? event.target.closest('button[data-shot-theme]') : null;
+      if (!button) {
+        return;
+      }
+      var theme = button.getAttribute('data-shot-theme');
+      groups.setAttribute('data-shot-theme', theme);
+      Array.prototype.forEach.call(buttons, function (other) {
+        var active = other === button;
+        other.classList.toggle('is-active', active);
+        other.setAttribute('aria-pressed', active ? 'true' : 'false');
+      });
+    });
+  }
+
   /* ---------- 设备识别 ---------- */
   var ua = navigator.userAgent || '';
   var iPadOS = /Macintosh/.test(ua) && (navigator.maxTouchPoints || 0) > 1;
@@ -172,6 +195,8 @@
     }, { threshold: 0.6 });
     counters.forEach(function (el) { co.observe(el); });
   }
+
+  initShotToggle();
 
   /* ---------- 顶部滚动进度 ---------- */
   var bar = document.querySelector('.scroll-progress span');

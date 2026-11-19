@@ -525,3 +525,48 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ---------- 桌面截图深/浅切换 ---------- */
+.shot-toggle {
+  display: inline-flex;
+  gap: 4px;
+  margin: 0 0 18px;
+  padding: 4px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+
+.shot-toggle-btn {
+  padding: 7px 16px;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+
+.shot-toggle-btn:hover {
+  color: var(--text);
+}
+
+.shot-toggle-btn.is-active {
+  color: #fff;
+  background: var(--accent-deep);
+}
+
+.desktop-shot .shot-light {
+  display: none;
+}
+
+[data-shot-theme="light"] .desktop-shot .shot-dark {
+  display: none;
+}
+
+[data-shot-theme="light"] .desktop-shot .shot-light {
+  display: block;
+}
