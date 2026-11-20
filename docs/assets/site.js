@@ -1,4 +1,4 @@
-/* 加密助手官网脚本：设备识别直链下载、滚动出现动效、数字递增、滚动进度。
+/* 加密助手官网脚本：设备识别直链下载、界面自动轮播、滚动出现动效、数字递增、滚动进度。
    不加载任何第三方资源，不发网络请求，不写 Cookie 与 localStorage。 */
 (function () {
   'use strict';
@@ -8,61 +8,82 @@
 
   var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  /* ---------- 桌面画廊：缩略图切换舞台大图 ---------- */
-  function initDesktopGallery() {
-    var gallery = document.querySelector('[data-desktop-gallery]');
-    if (!gallery) {
-      return;
-    }
-    var thumbs = gallery.querySelectorAll('.desktop-thumb');
-    var stageDark = gallery.querySelector('[data-stage="dark"]');
-    var stageLight = gallery.querySelector('[data-stage="light"]');
-    var title = gallery.querySelector('[data-stage-title]');
-    var note = gallery.querySelector('[data-stage-note]');
-    if (!stageDark || !stageLight || !thumbs.length) {
-      return;
-    }
-    Array.prototype.forEach.call(thumbs, function (thumb) {
-      thumb.addEventListener('click', function () {
-        Array.prototype.forEach.call(thumbs, function (other) {
-          var active = other === thumb;
-          other.classList.toggle('is-active', active);
-          other.setAttribute('aria-pressed', active ? 'true' : 'false');
-        });
-        stageDark.src = thumb.getAttribute('data-dark');
-        stageLight.src = thumb.getAttribute('data-light');
-        stageDark.alt = thumb.getAttribute('data-alt-dark') || '';
-        stageLight.alt = thumb.getAttribute('data-alt-light') || '';
-        if (title) {
-          title.textContent = thumb.getAttribute('data-title') || '';
-        }
-        if (note) {
-          note.textContent = thumb.getAttribute('data-note') || '';
-        }
-      });
-    });
-  }
-
-  /* ---------- 桌面截图深/浅切换（仅当前会话，不写入任何存储） ---------- */
-  function initShotToggle() {
-    var toggle = document.querySelector('.shot-toggle');
-    var groups = document.querySelector('.screens-groups');
-    if (!toggle || !groups) {
-      return;
-    }
-    var buttons = toggle.querySelectorAll('button[data-shot-theme]');
-    toggle.addEventListener('click', function (event) {
-      var button = event.target.closest ? event.target.closest('button[data-shot-theme]') : null;
-      if (!button) {
+  /* ---------- 界面轮播：跟着页面主线自动播放，不提供手动点选 ---------- */
+  function initCarousels() {
+    var roots = document.querySelectorAll('[data-carousel]');
+    Array.prototype.forEach.call(roots, function (root) {
+      var track = root.querySelector('.carousel-track');
+      var slides = root.querySelectorAll('.carousel-slide');
+      var dots = root.querySelectorAll('.carousel-dots > li');
+      var counter = (root.parentNode && root.parentNode.querySelector('[data-carousel-current]')) || root.querySelector('[data-carousel-current]');
+      if (!track || slides.length < 2) {
         return;
       }
-      var theme = button.getAttribute('data-shot-theme');
-      groups.setAttribute('data-shot-theme', theme);
-      Array.prototype.forEach.call(buttons, function (other) {
-        var active = other === button;
-        other.classList.toggle('is-active', active);
-        other.setAttribute('aria-pressed', active ? 'true' : 'false');
-      });
+      /* 减弱动效时走静态堆叠（见 site-enhance.css），不自动切换 */
+      if (reduceMotion) {
+        return;
+      }
+      var interval = parseInt(root.getAttribute('data-interval'), 10) || 4600;
+      var index = 0;
+      var timer = null;
+      var inView = false;
+
+      function paint() {
+        track.style.transform = 'translate3d(-' + index * 100 + '%, 0, 0)';
+        Array.prototype.forEach.call(slides, function (slide, i) {
+          slide.classList.toggle('is-active', i === index);
+        });
+        Array.prototype.forEach.call(dots, function (dot, i) {
+          dot.classList.toggle('is-active', i === index);
+          dot.classList.toggle('is-past', i < index);
+        });
+        if (counter) {
+          counter.textContent = (index < 9 ? '0' : '') + (index + 1);
+        }
+      }
+
+      function advance() {
+        index = (index + 1) % slides.length;
+        paint();
+      }
+
+      function stop() {
+        if (timer !== null) {
+          window.clearInterval(timer);
+          timer = null;
+        }
+      }
+
+      function play() {
+        stop();
+        if (!inView || document.hidden) {
+          return;
+        }
+        timer = window.setInterval(advance, interval);
+      }
+
+      paint();
+
+      if ('IntersectionObserver' in window) {
+        new IntersectionObserver(function (entries) {
+          entries.forEach(function (entry) {
+            inView = entry.isIntersecting;
+            if (inView) {
+              play();
+            } else {
+              stop();
+            }
+          });
+        }, { threshold: 0.3 }).observe(root);
+      } else {
+        inView = true;
+        play();
+      }
+
+      /* 鼠标停在画面上时不抢注意力，移开继续 */
+      root.addEventListener('mouseenter', stop);
+      root.addEventListener('mouseleave', play);
+      document.addEventListener('visibilitychange', play);
     });
   }
 
@@ -223,8 +244,7 @@
     counters.forEach(function (el) { co.observe(el); });
   }
 
-  initDesktopGallery();
-  initShotToggle();
+  initCarousels();
 
   /* ---------- 顶部滚动进度 ---------- */
   var bar = document.querySelector('.scroll-progress span');

@@ -446,9 +446,23 @@
 }
 
 /* ---------- 界面截图分组：只展示访客当前平台那一端 ---------- */
-.screens-groups {
+.screens-flow {
   display: grid;
-  gap: 38px;
+  gap: 34px;
+}
+
+/* 轨道是并排的多屏，不压住 min-content 会把整组撑出视口 */
+.screens-group {
+  min-width: 0;
+}
+
+.screens-group-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px 16px;
+  margin-bottom: 14px;
 }
 
 /* 安卓访客不看桌面截图，桌面访客不看安卓截图；识别不出设备时两组都保留 */
@@ -463,7 +477,7 @@
   display: flex;
   align-items: baseline;
   gap: 10px;
-  margin: 0 0 16px;
+  margin: 0;
   font-family: var(--mono);
   font-size: 0.74rem;
   font-weight: 500;
@@ -477,105 +491,6 @@
   letter-spacing: 0.04em;
   text-transform: none;
   color: var(--muted);
-}
-
-/* 桌面端：大图舞台 + 缩略图切换（横图不适合两列卡片） */
-.desktop-gallery {
-  display: grid;
-  gap: 12px;
-}
-
-.desktop-stage {
-  margin: 0;
-  padding: 18px;
-  background:
-    radial-gradient(ellipse 60% 50% at 50% 0%, rgba(123, 134, 255, 0.12), transparent 70%),
-    rgba(255, 255, 255, 0.022);
-  border: 1px solid var(--line);
-  border-radius: 22px;
-}
-
-.desktop-stage .desktop-shot,
-.desktop-thumb .desktop-shot {
-  display: block;
-  overflow: hidden;
-  background: #05070b;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5);
-}
-
-/* 保持低特异性（0,1,1），让上面的 .desktop-shot .shot-light 隐藏规则能生效 */
-.desktop-shot img {
-  display: block;
-  width: 100%;
-  height: auto;
-}
-
-.desktop-stage figcaption {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 6px 12px;
-  margin-top: 16px;
-}
-
-.desktop-stage figcaption strong {
-  font-family: var(--mono);
-  font-size: 0.78rem;
-  letter-spacing: 0.03em;
-}
-
-.desktop-stage figcaption span {
-  color: var(--muted);
-  font-size: 0.8rem;
-  line-height: 1.6;
-}
-
-.desktop-thumbs {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.desktop-thumb {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 8px;
-  text-align: left;
-  color: var(--muted);
-  background: rgba(255, 255, 255, 0.022);
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  cursor: pointer;
-  transition: border-color 0.18s ease, background 0.18s ease, transform 0.18s ease;
-}
-
-.desktop-thumb:hover {
-  border-color: var(--line-strong);
-  transform: translateY(-2px);
-}
-
-.desktop-thumb.is-active {
-  border-color: var(--accent);
-  background: rgba(123, 134, 255, 0.08);
-}
-
-.desktop-thumb .desktop-shot {
-  border-radius: 8px;
-  box-shadow: none;
-}
-
-.desktop-thumb-label {
-  padding: 0 2px;
-  font-family: var(--mono);
-  font-size: 0.66rem;
-  letter-spacing: 0.03em;
-}
-
-.desktop-thumb.is-active .desktop-thumb-label {
-  color: var(--text);
 }
 
 /* ---------- 桌面端访客：首屏换成桌面端截图 ---------- */
@@ -624,56 +539,195 @@
     overflow: hidden;
   }
 
-  .desktop-stage {
+  .carousel--desktop {
     padding: 12px;
   }
-
-  .desktop-thumbs {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }
 
-/* ---------- 桌面截图深/浅切换 ---------- */
-.shot-toggle {
-  display: inline-flex;
-  gap: 4px;
-  margin: 0 0 18px;
-  padding: 4px;
-  background: rgba(255, 255, 255, 0.04);
+/* ---------- 界面轮播：跟着页面主线自动播放，不需要点选 ---------- */
+.carousel {
+  position: relative;
+  min-width: 0;
+}
+
+.carousel-stage {
+  overflow: hidden;
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: 14px;
+  background: #05070b;
 }
 
-.shot-toggle-btn {
-  padding: 7px 16px;
+.carousel-track {
+  display: grid;
+  gap: 18px;
+}
+
+/* 有脚本时才是并排轨道；没有脚本就按静态堆叠全部看到 */
+.js .carousel-track {
+  display: flex;
+  gap: 0;
+  transition: transform 0.85s cubic-bezier(0.22, 0.68, 0.28, 1);
+  will-change: transform;
+}
+
+.carousel-slide {
+  flex: 0 0 100%;
+  min-width: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.carousel-slide figcaption {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 12px;
+  padding: 0 18px 18px;
+}
+
+.carousel-slide figcaption strong {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.03em;
+}
+
+.carousel-slide figcaption span {
+  flex: 1 1 280px;
   color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.6;
+}
+
+/* 桌面端：截图本身是舞台主体 */
+.carousel--desktop {
+  padding: 18px;
+  background:
+    radial-gradient(ellipse 60% 50% at 50% 0%, rgba(123, 134, 255, 0.12), transparent 70%),
+    rgba(255, 255, 255, 0.022);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+}
+
+.carousel--desktop .desktop-shot {
+  display: block;
+  overflow: hidden;
+  border-bottom: 1px solid var(--line);
+}
+
+.carousel--desktop .desktop-shot img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* Android：手机框逐个滑过 */
+.carousel--android .carousel-stage {
+  padding: 10px 0 22px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.carousel--android .carousel-slide {
+  align-items: center;
+  text-align: center;
+}
+
+.carousel--android .phone {
+  width: min(224px, 58vw);
+}
+
+.carousel--android .carousel-slide figcaption {
+  justify-content: center;
+  max-width: 32rem;
+  padding: 0;
+}
+
+.carousel--android .carousel-slide figcaption span {
+  flex-basis: 100%;
+}
+
+/* 进度条：当前那一格变长并染色，纯指示，不可点 */
+.carousel-dots {
+  display: none;
+  gap: 6px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.js .carousel-dots {
+  display: flex;
+}
+
+.carousel-dots li {
+  width: 20px;
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.24);
+  transition: width 0.32s ease, background 0.32s ease;
+}
+
+.carousel-dots li.is-past {
+  background: rgba(148, 163, 184, 0.5);
+}
+
+.carousel-dots li.is-active {
+  width: 40px;
+  background: linear-gradient(90deg, var(--accent), var(--mint));
+}
+
+.carousel--android .carousel-dots {
+  justify-content: center;
+}
+
+.carousel-count {
+  display: none;
+  margin: 0;
   font-family: var(--mono);
   font-size: 0.72rem;
-  letter-spacing: 0.04em;
-  background: transparent;
-  border: 0;
-  border-radius: 999px;
-  cursor: pointer;
-  transition: background 0.18s ease, color 0.18s ease;
+  letter-spacing: 0.06em;
+  color: var(--muted-2);
 }
 
-.shot-toggle-btn:hover {
-  color: var(--text);
+.js .carousel-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
-.shot-toggle-btn.is-active {
-  color: #fff;
-  background: var(--accent-deep);
+.carousel-count i {
+  font-style: normal;
+  opacity: 0.45;
 }
 
-.desktop-shot .shot-light {
-  display: none;
+.carousel-count-label {
+  margin-right: 4px;
 }
 
-[data-shot-theme="light"] .desktop-shot .shot-dark {
-  display: none;
-}
+/* 减弱动效：不自动切换，把每一屏都静态排开 */
+@media (prefers-reduced-motion: reduce) {
+  .js .carousel-track {
+    display: grid;
+    gap: 18px;
+    transition: none;
+  }
 
-[data-shot-theme="light"] .desktop-shot .shot-light {
-  display: block;
+  .js .carousel-dots,
+  .js .carousel-count {
+    display: none;
+  }
+
+  .carousel-stage {
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .carousel--android .carousel-stage {
+    padding: 0;
+  }
 }
