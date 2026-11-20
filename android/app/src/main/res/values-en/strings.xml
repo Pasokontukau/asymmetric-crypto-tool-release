@@ -191,6 +191,13 @@
     <string name="about_license_note">The full GPLv3 text can be read via “View full GPLv3” above; third-party licenses are governed by their release packages.</string>
     <string name="about_gpl_load_failed">Failed to load the GPLv3 license text.</string>
 
+    <!-- Website and updates -->
+    <string name="about_section_links">Website &amp; updates</string>
+    <string name="about_links_body">New versions are published on the website and in GitHub Releases. This app does not use the network; the buttons below open your browser so you can check the latest version yourself.</string>
+    <string name="about_open_website">Open website</string>
+    <string name="about_check_updates">View latest version</string>
+    <string name="about_open_link_failed">No browser can open this link</string>
+
     <!-- Accessibility disclosure -->
     <string name="a11y_dialog_title">Enable accessibility service</string>
     <string name="a11y_purpose_title">Purpose</string>

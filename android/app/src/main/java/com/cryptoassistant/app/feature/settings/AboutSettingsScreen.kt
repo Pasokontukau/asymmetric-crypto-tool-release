@@ -1,5 +1,9 @@
 package com.cryptoassistant.app.feature.settings
 
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -31,6 +35,21 @@ import com.cryptoassistant.app.ui.components.AppCard
 import com.cryptoassistant.app.ui.components.KeyValueRow
 import com.cryptoassistant.app.ui.components.SectionTitle
 import com.cryptoassistant.app.ui.theme.Spacing
+
+/** 官网与最新版本入口：只交给系统浏览器打开，应用自身不发起任何网络请求。 */
+private const val SITE_URL = "https://pasokontukau.github.io/asymmetric-crypto-tool-release/"
+private const val LATEST_RELEASE_URL =
+    "https://github.com/Pasokontukau/asymmetric-crypto-tool-release/releases/latest"
+
+/** 用系统浏览器打开链接；没有可用浏览器时给一句提示，不静默失败。 */
+private fun openLink(context: Context, url: String) {
+    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    runCatching { context.startActivity(intent) }
+        .onFailure {
+            Toast.makeText(context, R.string.about_open_link_failed, Toast.LENGTH_SHORT).show()
+        }
+}
 
 /**
  * 关于页只展示“构建是什么、许可证是什么、隐私边界是什么”。
@@ -91,6 +110,31 @@ fun AboutSettingsScreen(modifier: Modifier = Modifier) {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+        }
+
+        SectionTitle(stringResource(R.string.about_section_links))
+
+        AppCard {
+            Text(
+                text = SITE_URL,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.primary,
+            )
+            Spacer(Modifier.height(Spacing.xs))
+            Text(
+                text = stringResource(R.string.about_links_body),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(Spacing.sm))
+            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                TextButton(onClick = { openLink(context, SITE_URL) }) {
+                    Text(stringResource(R.string.about_open_website))
+                }
+                TextButton(onClick = { openLink(context, LATEST_RELEASE_URL) }) {
+                    Text(stringResource(R.string.about_check_updates))
+                }
+            }
         }
 
         SectionTitle(stringResource(R.string.about_section_license))

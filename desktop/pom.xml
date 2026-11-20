@@ -96,6 +96,9 @@
                     <archive>
                         <manifest>
                             <mainClass>app.AppMain</mainClass>
+                            <!-- 把项目版本写进清单：关于页从 Implementation-Version 读取，
+                                 不在代码里重复写死版本号（见 app/AppVersion.java）。 -->
+                            <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
                         </manifest>
                     </archive>
                     <descriptorRefs>

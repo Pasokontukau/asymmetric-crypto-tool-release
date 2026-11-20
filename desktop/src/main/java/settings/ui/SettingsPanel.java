@@ -1,5 +1,6 @@
 package settings.ui;
 
+import app.AppVersion;
 import app.MainFrame;
 import app.theme.AppFonts;
 import app.theme.ThemeManager;
@@ -12,6 +13,7 @@ import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Desktop;
 import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
@@ -27,6 +29,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
@@ -75,6 +78,11 @@ public class SettingsPanel extends JPanel {
     // 用于存储原始菜单列表
     private static final String[] FULL_MENU_ITEMS = {"主题设置", "安全设置", "日志管理", "存储设置", "文件处理", "开发者选项", "关于"};
     private static final String[] NO_SECURITY_MENU_ITEMS = {"主题设置", "日志管理", "存储设置", "开发者选项", "关于"};
+
+    /** 官网站点与最新版本入口；只交给系统浏览器打开，程序自身不发起任何网络请求。 */
+    private static final String SITE_URL = "https://pasokontukau.github.io/asymmetric-crypto-tool-release/";
+    private static final String LATEST_RELEASE_URL =
+            "https://github.com/Pasokontukau/asymmetric-crypto-tool-release/releases/latest";
     
     // 主题设置组件
     private ButtonGroup themeButtonGroup;
@@ -1361,7 +1369,7 @@ public class SettingsPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.insets = new Insets(5, 10, 5, 10);
         
-        JLabel versionLabel = new JLabel("版本: 1.0.0");
+        JLabel versionLabel = new JLabel("版本: " + AppVersion.get());
         versionLabel.setFont(app.theme.AppFonts.getNormalFont());
         versionLabel.setForeground(app.theme.ThemeManager.getTextColor());
         infoPanel.add(versionLabel, gbc);
@@ -1408,6 +1416,44 @@ public class SettingsPanel extends JPanel {
         descriptionArea.setWrapStyleWord(true);
         descriptionArea.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
         infoPanel.add(descriptionArea, gbc);
+
+        gbc.gridy++;
+        gbc.gridwidth = 2;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        JSeparator linksSeparator = new JSeparator();
+        linksSeparator.setBackground(app.theme.ThemeManager.getBorderColor());
+        infoPanel.add(linksSeparator, gbc);
+
+        gbc.gridy++;
+        JLabel siteLabel = new JLabel("官网: " + SITE_URL);
+        siteLabel.setFont(app.theme.AppFonts.getSmallFont());
+        siteLabel.setForeground(app.theme.ThemeManager.getSecondaryTextColor());
+        infoPanel.add(siteLabel, gbc);
+
+        gbc.gridy++;
+        JTextArea updateHintArea = new JTextArea(
+            "新版本发布在官网与 GitHub Releases。下面的按钮会用系统浏览器打开；\n" +
+            "程序本身不联网，也不会向任何服务器上报信息。"
+        );
+        updateHintArea.setFont(app.theme.AppFonts.getSmallFont());
+        updateHintArea.setForeground(app.theme.ThemeManager.getSecondaryTextColor());
+        updateHintArea.setBackground(app.theme.ThemeManager.getPanelBackgroundColor());
+        updateHintArea.setEditable(false);
+        updateHintArea.setBorder(null);
+        updateHintArea.setLineWrap(true);
+        updateHintArea.setWrapStyleWord(true);
+        infoPanel.add(updateHintArea, gbc);
+
+        gbc.gridy++;
+        JPanel linkRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        linkRow.setBackground(app.theme.ThemeManager.getPanelBackgroundColor());
+        JButton siteButton = ThemeManager.createPrimaryButton("打开官网");
+        siteButton.addActionListener(e -> openExternalLink(SITE_URL));
+        JButton updateButton = ThemeManager.createNeutralButton("查看最新版本");
+        updateButton.addActionListener(e -> openExternalLink(LATEST_RELEASE_URL));
+        linkRow.add(siteButton);
+        linkRow.add(updateButton);
+        infoPanel.add(linkRow, gbc);
         
         contentContainer.add(infoPanel, BorderLayout.NORTH);
         scrollPane.setViewportView(contentContainer);
@@ -1415,6 +1461,29 @@ public class SettingsPanel extends JPanel {
         
         // 添加到内容面板
         contentPanel.add(aboutPanel, "关于");
+    }
+
+    /**
+     * 用系统浏览器打开链接；打不开时把地址显示出来，让用户自己复制。
+     *
+     * 程序本身不发起网络请求：要做联网的版本检查得先加权限与隐私说明，这里只负责交给浏览器。
+     */
+    private void openExternalLink(String url) {
+        try {
+            if (!Desktop.isDesktopSupported()
+                    || !Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
+                throw new UnsupportedOperationException("browse 不可用");
+            }
+            Desktop.getDesktop().browse(new URI(url));
+        } catch (Exception ex) {
+            JTextArea address = new JTextArea(url);
+            address.setEditable(false);
+            address.setLineWrap(true);
+            address.setWrapStyleWord(true);
+            address.setFont(app.theme.AppFonts.getSmallFont());
+            JOptionPane.showMessageDialog(
+                    this, address, "请在浏览器中手动打开", JOptionPane.INFORMATION_MESSAGE);
+        }
     }
     
     /**
