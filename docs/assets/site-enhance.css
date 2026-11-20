@@ -377,7 +377,7 @@
   }
 
   .verify-help {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -590,6 +590,11 @@
 }
 
 @media (max-width: 860px) {
+  /* 首屏装饰圆环比视口宽，不裁会造成横向滚动条 */
+  .hero-visual {
+    overflow: hidden;
+  }
+
   .desktop-stage {
     padding: 12px;
   }
