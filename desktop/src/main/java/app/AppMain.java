@@ -2,6 +2,7 @@ package app;
 
 import app.MainFrame;
 import app.theme.AppFonts;
+import app.theme.BrandPalette;
 import app.theme.ThemeManager;
 import com.formdev.flatlaf.FlatDarkLaf;
 import com.formdev.flatlaf.FlatLightLaf;
@@ -51,7 +52,10 @@ public class AppMain {
             }
             
             configureFlatLafTheme();
-            
+
+            // 品牌色必须在设置 LAF 之后、创建窗口之前写入，否则已创建的组件会保留 FlatLaf 默认色
+            BrandPalette.apply(ThemeManager.isDarkTheme());
+
             Font normalFont = AppFonts.getNormalFont();
             Font boldFont = AppFonts.getBoldFont();
             setGlobalFonts(normalFont, boldFont);
@@ -72,11 +76,34 @@ public class AppMain {
             }
         }
         
+        java.util.List<java.io.File> openFiles = parseOpenFiles(args);
+
         SwingUtilities.invokeLater(() -> {
             MainFrame mainFrame = new MainFrame();
             mainFrame.showFrame();
+            if (!openFiles.isEmpty()) {
+                mainFrame.openExternalFiles(openFiles);
+            }
             showDataDirectoryFallbackWarning(mainFrame);
         });
+    }
+
+    /** 命令行/文件关联传入的文件；忽略以「-」开头的选项与不存在的路径。 */
+    static java.util.List<java.io.File> parseOpenFiles(String[] args) {
+        java.util.List<java.io.File> files = new java.util.ArrayList<>();
+        if (args == null) {
+            return files;
+        }
+        for (String arg : args) {
+            if (arg == null || arg.isEmpty() || arg.startsWith("-")) {
+                continue;
+            }
+            java.io.File file = new java.io.File(arg);
+            if (file.isFile()) {
+                files.add(file);
+            }
+        }
+        return files;
     }
 
     private static void showDataDirectoryFallbackWarning(Component parent) {

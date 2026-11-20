@@ -468,7 +468,7 @@ public class ThemeManager {
      * @return 配置好的按钮
      */
     public static javax.swing.JButton createPrimaryButton(String text) {
-        return createRoundedButton(text, new java.awt.Color(66, 133, 244), java.awt.Color.WHITE);
+        return createRoundedButton(text, UIConstants.PRIMARY_BUTTON_COLOR, java.awt.Color.WHITE);
     }
     
     /**
@@ -477,7 +477,7 @@ public class ThemeManager {
      * @return 配置好的按钮
      */
     public static javax.swing.JButton createDangerButton(String text) {
-        return createRoundedButton(text, new java.awt.Color(234, 67, 53), java.awt.Color.WHITE);
+        return createRoundedButton(text, UIConstants.DANGER_BUTTON_COLOR, java.awt.Color.WHITE);
     }
     
     /**
@@ -486,6 +486,6 @@ public class ThemeManager {
      * @return 配置好的按钮
      */
     public static javax.swing.JButton createNeutralButton(String text) {
-        return createRoundedButton(text, new java.awt.Color(200, 200, 200), java.awt.Color.BLACK);
+        return createRoundedButton(text, UIConstants.NEUTRAL_BUTTON_COLOR, java.awt.Color.BLACK);
     }
 }

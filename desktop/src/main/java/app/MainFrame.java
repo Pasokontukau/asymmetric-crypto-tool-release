@@ -52,6 +52,21 @@ public class MainFrame extends JFrame {
     // 保存UsagePanel实例，以便在字体大小变化时更新样式
     private usage.ui.UsagePanel usagePanel;
     private securecomm.ui.SecureTextPanel secureTextPanel;
+    private JTabbedPane tabbedPane;
+
+    /**
+     * 外部打开（双击 .aegix、命令行传入文件）：切到安全通信页并加入待解密列表。
+     * 与拖入文件走同一条判型/分流路径。
+     */
+    public void openExternalFiles(java.util.List<java.io.File> files) {
+        if (files == null || files.isEmpty() || secureTextPanel == null) {
+            return;
+        }
+        if (tabbedPane != null) {
+            tabbedPane.setSelectedIndex(2);
+        }
+        secureTextPanel.openExternalFiles(files);
+    }
     
     private void initComponents() {
         // 设置主题颜色
@@ -61,7 +76,8 @@ public class MainFrame extends JFrame {
         UIManager.put("TabbedPane.font", app.theme.AppFonts.getBoldFont());
         UIManager.put("TabbedPane.selectedTabFont", app.theme.AppFonts.getBoldFont());
         
-        JTabbedPane tabbedPane = new JTabbedPane();
+        this.tabbedPane = new JTabbedPane();
+        JTabbedPane tabbedPane = this.tabbedPane;
         
         // 优化标签页样式
         tabbedPane.setTabPlacement(JTabbedPane.TOP);

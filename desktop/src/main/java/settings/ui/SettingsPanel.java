@@ -1247,6 +1247,58 @@ public class SettingsPanel extends JPanel {
         gbc.gridy++;
         mainPanel.add(actionRow, gbc);
 
+        // ---------- 文件关联（仅当前用户，不需管理员） ----------
+        JLabel assocLabel = new JLabel("文件关联");
+        assocLabel.setFont(app.theme.AppFonts.getBoldFont());
+        assocLabel.setForeground(app.theme.ThemeManager.getTextColor());
+        gbc.gridy++;
+        mainPanel.add(assocLabel, gbc);
+
+        final JLabel assocStatus = new JLabel();
+        assocStatus.setFont(app.theme.AppFonts.getSmallFont());
+        assocStatus.setForeground(app.theme.ThemeManager.getSecondaryTextColor());
+        gbc.gridy++;
+        mainPanel.add(assocStatus, gbc);
+
+        JButton assocOn = app.theme.ThemeManager.createPrimaryButton("关联 .aegix");
+        JButton assocOff = app.theme.ThemeManager.createNeutralButton("取消关联");
+        Runnable refreshAssoc = () -> {
+            boolean supported = core.storage.FileAssociation.isSupported();
+            boolean linked = supported && core.storage.FileAssociation.isAssociated();
+            if (!supported) {
+                assocStatus.setText("仅 Windows 支持文件关联");
+            } else if (linked) {
+                assocStatus.setText("已关联：双击 .aegix 会打开本程序并载入该文件");
+            } else {
+                assocStatus.setText("未关联：关联后双击 .aegix 即可直接打开（只写当前用户注册表）");
+            }
+            assocOn.setEnabled(supported && !linked);
+            assocOff.setEnabled(linked);
+        };
+        assocOn.addActionListener(e -> {
+            if (core.storage.FileAssociation.install()) {
+                refreshAssoc.run();
+            } else {
+                JOptionPane.showMessageDialog(this, "关联失败，可查看日志后重试。",
+                        "文件关联", JOptionPane.WARNING_MESSAGE);
+            }
+        });
+        assocOff.addActionListener(e -> {
+            if (core.storage.FileAssociation.uninstall()) {
+                refreshAssoc.run();
+            } else {
+                JOptionPane.showMessageDialog(this, "取消关联失败，可查看日志后重试。",
+                        "文件关联", JOptionPane.WARNING_MESSAGE);
+            }
+        });
+        JPanel assocRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        assocRow.setBackground(app.theme.ThemeManager.getPanelBackgroundColor());
+        assocRow.add(assocOn);
+        assocRow.add(assocOff);
+        gbc.gridy++;
+        mainPanel.add(assocRow, gbc);
+        refreshAssoc.run();
+
         fileProcessingPanel.add(mainPanel, BorderLayout.NORTH);
         contentPanel.add(fileProcessingPanel, "文件处理");
     }

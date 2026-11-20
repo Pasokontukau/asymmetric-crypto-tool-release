@@ -18,12 +18,12 @@ public final class UIConstants {
     // 圆角值
     public static final int CORNER_RADIUS = 12;
 
-    // 按钮颜色
-    public static final Color PRIMARY_BUTTON_COLOR = new Color(66, 133, 244);
-    public static final Color DANGER_BUTTON_COLOR = new Color(234, 67, 53);
-    public static final Color NEUTRAL_BUTTON_COLOR = new Color(200, 200, 200);
+    // 按钮颜色：与 Android 主题同一套品牌色（Indigo / 错误红 / Cloud 中性灰）
+    public static final Color PRIMARY_BUTTON_COLOR = new Color(0x5B67E8);
+    public static final Color DANGER_BUTTON_COLOR = new Color(0xB3261E);
+    public static final Color NEUTRAL_BUTTON_COLOR = new Color(0xC3CADD);
 
-    // 语义颜色
-    public static final Color ERROR_TEXT_COLOR = new Color(200, 0, 0);
-    public static final Color SUCCESS_TEXT_COLOR = new Color(0, 150, 0);
+    // 语义颜色：青绿表示成功，深红表示错误；深浅主题下都保持可读
+    public static final Color ERROR_TEXT_COLOR = new Color(0xD93A31);
+    public static final Color SUCCESS_TEXT_COLOR = new Color(0x0E8F74);
 }

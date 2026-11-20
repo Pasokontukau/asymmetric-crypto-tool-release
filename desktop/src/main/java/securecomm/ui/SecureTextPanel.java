@@ -573,6 +573,16 @@ public class SecureTextPanel extends OperationPanel {
     }
 
     /**
+     * 由双击 .aegix 或命令行传入文件时调用：与拖入走同一条判型与解密分流。
+     */
+    public void openExternalFiles(java.util.List<java.io.File> files) {
+        if (files == null || files.isEmpty()) {
+            return;
+        }
+        addFilesToFileList(files.toArray(new java.io.File[0]));
+    }
+
+    /**
      * 把外部传入的文件/文件夹加入输入列表：普通文件直接加入，文件夹先打成临时 ZIP。
      */
     private void addFilesToFileList(java.io.File[] files) {
