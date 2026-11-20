@@ -35,6 +35,11 @@
   transform: none;
 }
 
+/* ---------- 全部安装包页 ---------- */
+.download-intro {
+  padding-bottom: 0;
+}
+
 /* ---------- Hero 设备提示 ---------- */
 .hero-pick {
   margin: 14px 0 0;
@@ -43,6 +48,22 @@
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.hero-more {
+  margin: 10px 0 0;
+  font-size: 0.82rem;
+}
+
+.hero-more .text-link {
+  color: var(--muted);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.35);
+}
+
+.hero-more .text-link:hover {
+  color: var(--text);
+  border-bottom-color: var(--text);
 }
 
 .hero-pick::before {
@@ -424,10 +445,18 @@
   }
 }
 
-/* ---------- 界面截图分组：按设备决定先看哪一端 ---------- */
+/* ---------- 界面截图分组：只展示访客当前平台那一端 ---------- */
 .screens-groups {
   display: grid;
   gap: 38px;
+}
+
+/* 安卓访客不看桌面截图，桌面访客不看安卓截图；识别不出设备时两组都保留 */
+[data-platform="android"] .screens-group[data-screens-group="desktop"],
+[data-platform="windows"] .screens-group[data-screens-group="android"],
+[data-platform="mac"] .screens-group[data-screens-group="android"],
+[data-platform="linux"] .screens-group[data-screens-group="android"] {
+  display: none;
 }
 
 .screens-group-title {

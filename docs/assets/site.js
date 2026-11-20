@@ -83,18 +83,7 @@
   }
   document.documentElement.setAttribute('data-platform', platform);
 
-  /* 截图分组按设备排序：Android 访客先看 Android，其余先看桌面端 */
-  (function orderScreenGroups() {
-    var groups = document.querySelector('.screens-groups');
-    if (!groups) {
-      return;
-    }
-    var preferred = platform === 'android' ? 'android' : 'desktop';
-    var target = groups.querySelector('[data-screens-group="' + preferred + '"]');
-    if (target && target !== groups.firstElementChild) {
-      groups.insertBefore(target, groups.firstElementChild);
-    }
-  })();
+  /* screenshot 分组只显示本平台的：具体隐藏规则在 site-enhance.css，这里只负责写入 data-platform */
 
   var picks = {
     android: {
@@ -112,25 +101,25 @@
       banner: '已识别为 Windows 设备：主按钮直接下载安装包（需要管理员权限）。不想装进系统，就用下面的便携 ZIP，解压即用。'
     },
     ios: {
-      href: '#download',
+      href: 'download.html',
       label: '查看支持的平台',
       short: 'iOS 暂无版本，可查看 Android 与 Windows 版',
       banner: '检测到 iOS 设备：目前没有 iOS 版本。可以看看 Android 与 Windows 版，或到「参与开发」推动 iOS 支持。'
     },
     mac: {
-      href: '#download',
+      href: 'download.html',
       label: '查看支持的平台',
       short: 'macOS 暂无版本，桌面端仅 Windows x64',
       banner: '检测到 macOS：桌面端目前只提供 Windows x64。可以看看 Android 版，或在 Windows 虚拟机里使用便携包。'
     },
     linux: {
-      href: '#download',
+      href: 'download.html',
       label: '查看支持的平台',
       short: 'Linux 暂无版本，桌面端仅 Windows x64',
       banner: '检测到 Linux：桌面端目前只提供 Windows x64。可以看看 Android 版，或到「参与开发」推动 Linux 支持。'
     },
     unknown: {
-      href: '#download',
+      href: 'download.html',
       label: '选择你的平台',
       short: '',
       banner: '没能识别你的设备，请在下面手动选择平台。'
