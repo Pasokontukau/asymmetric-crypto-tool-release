@@ -3,8 +3,8 @@
 (function () {
   'use strict';
 
-  var APK = 'https://github.com/Pasokontukau/asymmetric-crypto-tool-release/releases/download/v1.4.0/CryptoAssistant-1.4.0-release.apk';
-  var INSTALLER = 'https://github.com/Pasokontukau/asymmetric-crypto-tool-release/releases/download/v1.4.0/CryptoAssistant-1.4.0-installer.exe';
+  var APK = 'https://github.com/Pasokontukau/asymmetric-crypto-tool-release/releases/download/v1.4.1/CryptoAssistant-1.4.1-release.apk';
+  var INSTALLER = 'https://github.com/Pasokontukau/asymmetric-crypto-tool-release/releases/download/v1.4.1/CryptoAssistant-1.4.1-installer.exe';
 
   var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -175,7 +175,7 @@
   var headerCta = document.getElementById('header-download');
   if (headerCta && pick.href.charAt(0) !== '#') {
     headerCta.setAttribute('href', pick.href);
-    headerCta.innerHTML = '下载 <span>1.4.0</span>';
+    headerCta.innerHTML = '下载 <span>1.4.1</span>';
   }
 
   var heroPick = document.getElementById('hero-pick');

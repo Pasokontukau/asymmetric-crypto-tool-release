@@ -13,10 +13,13 @@ $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
 Set-Location $root
 
-$zip = Join-Path $root "target\portable\CryptoAssistant-1.4.0-win64.zip"
-if (-not (Test-Path -LiteralPath $zip)) {
-    throw "Portable ZIP not found: $zip"
+# Version-agnostic: pick the ZIP that package-portable.bat just produced.
+$portableDir = Join-Path $root "target\portable"
+$zip = @(Get-ChildItem -LiteralPath $portableDir -Filter "CryptoAssistant-*-win64.zip" -ErrorAction SilentlyContinue)
+if ($zip.Count -ne 1) {
+    throw "Expected exactly one CryptoAssistant-*-win64.zip under $portableDir, found $($zip.Count); run package-portable.bat first."
 }
+$zip = $zip[0].FullName
 
 $jdk = Join-Path $env:USERPROFILE ".jdks\corretto-17"
 $javac = Join-Path $jdk "bin\javac.exe"

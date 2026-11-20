@@ -33,8 +33,8 @@ android {
         applicationId = "com.cryptoassistant.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = 26
-        versionName = "1.4.0"
+        versionCode = 27
+        versionName = "1.4.1"
         // 构建 UUID（每次构建唯一）与编译时间，均只读，不落盘、不用于任何协议逻辑。
         buildConfigField("String", "BUILD_UUID", "\"$buildUuid\"")
         buildConfigField("String", "BUILD_TIME", "\"$buildTime\"")
