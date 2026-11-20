@@ -949,32 +949,6 @@ h2 {
   padding-top: 0;
 }
 
-.screens-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.screen-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 21px;
-  margin: 0;
-  padding: 38px 20px 23px;
-  background:
-    radial-gradient(ellipse 65% 55% at 50% 0%, rgba(123, 134, 255, 0.1), transparent 70%),
-    rgba(255, 255, 255, 0.022);
-  border: 1px solid var(--line);
-  border-radius: 22px;
-}
-
-.screen-card-light {
-  background:
-    radial-gradient(ellipse 65% 55% at 50% 0%, rgba(88, 214, 183, 0.08), transparent 70%),
-    rgba(255, 255, 255, 0.022);
-}
-
 .phone-shot {
   width: min(224px, 60vw);
   padding: 6px;
@@ -983,32 +957,6 @@ h2 {
 
 .phone-shot .phone-screen {
   border-radius: 27px;
-}
-
-.screen-card figcaption {
-  width: 100%;
-  padding-top: 17px;
-  text-align: center;
-  border-top: 1px solid var(--line);
-}
-
-.screen-card figcaption strong,
-.screen-card figcaption span {
-  display: block;
-}
-
-.screen-card figcaption strong {
-  font-family: var(--mono);
-  font-size: 0.7rem;
-  font-weight: 500;
-  letter-spacing: 0.03em;
-}
-
-.screen-card figcaption span {
-  margin-top: 4px;
-  color: var(--muted);
-  font-size: 0.72rem;
-  line-height: 1.6;
 }
 
 .download-section {
@@ -1699,13 +1647,8 @@ h2 {
     font-size: clamp(1.8rem, 8vw, 2.5rem);
   }
 
-  .screens-grid,
   .download-grid {
     grid-template-columns: 1fr;
-  }
-
-  .screen-card {
-    padding-top: 28px;
   }
 
   .download-card > p {
@@ -1784,9 +1727,6 @@ h2 {
     width: min(250px, 78vw);
   }
 
-  .screen-card {
-    padding-inline: 14px;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {

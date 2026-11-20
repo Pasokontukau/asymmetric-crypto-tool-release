@@ -14,8 +14,9 @@
     Array.prototype.forEach.call(roots, function (root) {
       var track = root.querySelector('.carousel-track');
       var slides = root.querySelectorAll('.carousel-slide');
-      var dots = root.querySelectorAll('.carousel-dots > li');
+      var dotsList = root.querySelector('.carousel-dots');
       var counter = (root.parentNode && root.parentNode.querySelector('[data-carousel-current]')) || root.querySelector('[data-carousel-current]');
+      var total = (root.parentNode && root.parentNode.querySelector('[data-carousel-total]')) || root.querySelector('[data-carousel-total]');
       if (!track || slides.length < 2) {
         return;
       }
@@ -23,6 +24,18 @@
       if (reduceMotion) {
         return;
       }
+      /* 进度条与总数按实际屏数生成：以后加减截图只改 HTML，不用再数一遍 */
+      if (dotsList) {
+        dotsList.innerHTML = '';
+        for (var n = 0; n < slides.length; n += 1) {
+          dotsList.appendChild(document.createElement('li'));
+        }
+      }
+      if (total) {
+        total.textContent = (slides.length < 10 ? '0' : '') + slides.length;
+      }
+      var dots = root.querySelectorAll('.carousel-dots > li');
+
       var interval = parseInt(root.getAttribute('data-interval'), 10) || 4600;
       var index = 0;
       var timer = null;

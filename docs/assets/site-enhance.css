@@ -365,7 +365,6 @@
 
 /* ---------- 卡片轻微悬浮 ---------- */
 .feature-card,
-.screen-card,
 .contribute-item {
   transition: transform 0.26s ease, border-color 0.26s ease;
 }
@@ -374,10 +373,6 @@
 .contribute-item:hover {
   transform: translateY(-3px);
   border-color: var(--line-strong);
-}
-
-.screen-card:hover {
-  transform: translateY(-4px);
 }
 
 /* ---------- 响应式 ---------- */
@@ -435,7 +430,6 @@
   .download-card,
   .transfer-card,
   .feature-card,
-  .screen-card,
   .contribute-item {
     transition: none;
   }
