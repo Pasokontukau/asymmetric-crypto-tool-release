@@ -179,7 +179,7 @@
   完整事件目录、隐私边界与测试计划见 [`docs/archive/日志系统升级计划.md`](../docs/android/archive/日志系统升级计划.md)；
   统计条数与占用、预览最近 30 条、导出为文本文件（系统文件选择器，无存储权限）或清空。
 - 前台服务类型 `specialUse`（subtype `floating_ball_quick_entry`），低优先级常驻通知。
-- 无 `INTERNET` 权限，无广告/统计/崩溃 SDK。
+- 网络：唯一的 `INTERNET` 权限只用于「设置 → 关于 → 检查更新」（默认关闭）；无广告/统计/崩溃 SDK。
 
 ![悬浮球](../docs/assets/android/screenshots/04-ball-over-launcher.png)
 
@@ -335,7 +335,8 @@ android.permission.POST_NOTIFICATIONS
 com.cryptoassistant.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION   # AndroidX 自动生成
 ```
 
-**没有** `INTERNET`、存储、通讯录、相机、位置等权限。
+**没有** 存储、通讯录、相机、位置等权限；`INTERNET` 只有一项，只服务于可关闭的「检查更新」
+（默认关闭，开启后仅向 GitHub 要一次最新版本号）。
 `SYSTEM_ALERT_WINDOW` 由用户单独授权；`POST_NOTIFICATIONS` 仅用于展示悬浮球常驻通知（可选）。
 无障碍服务（`TextAccessibilityService`，仅声明系统级的 `BIND_ACCESSIBILITY_SERVICE`）只在你点悬浮球的
 那一刻读/写当前焦点输入框；`onAccessibilityEvent` 刻意留空，不监听、不采集、不缓存屏幕内容。
@@ -683,7 +684,7 @@ com.cryptoassistant.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION   # AndroidX �
 6. 授权后开启 → 悬浮球出现在屏幕边缘；长按展开菜单（只显示联系人），点击遮罩关闭。
 7. 拖动悬浮球到左侧、底部，确认吸边；旋转屏幕/切换主题后仍为圆形且不越界。
 8. 在系统设置中撤销「显示在其他应用上层」→ 悬浮球消失，应用显示「已暂停」。
-9. 强制停止应用后重新打开 → 悬浮球与密钥均恢复；检查常驻通知与无网络权限描述。
+9. 强制停止应用后重新打开 → 悬浮球与密钥均恢复；检查常驻通知与「关于」页的联网说明。
 10. 便捷模式：把光标放进输入框 → 点球 → 明文应就地加密、密文应就地解密；要改接收方就长按菜单选择。
 11. **标准模式（新）**：在设置里关掉「便捷模式」；先往剪贴板放一段密文，再点球 → 应打开**空白**输入框
     （输入 0 字，证明没有读剪贴板），标题为「文字加密解密」、提示「在里面粘贴明文或者密文进行加密或解密」。

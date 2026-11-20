@@ -2,6 +2,7 @@ package settings.ui;
 
 import app.AppVersion;
 import app.MainFrame;
+import app.UpdateCheck;
 import app.theme.AppFonts;
 import app.theme.ThemeManager;
 import app.theme.UIConstants;
@@ -36,6 +37,7 @@ import java.nio.file.StandardCopyOption;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import javax.swing.BorderFactory;
 import javax.swing.ButtonGroup;
 import javax.swing.DefaultComboBoxModel;
@@ -1427,7 +1429,8 @@ public class SettingsPanel extends JPanel {
         gbc.gridy++;
         JTextArea updateHintArea = new JTextArea(
             "新版本发布在官网 pasokontukau.github.io 与 GitHub Releases。\n" +
-            "下面的按钮会用系统浏览器打开；程序本身不联网，也不会上报信息。"
+            "「打开官网」与「查看最新版本」用系统浏览器打开；开启下面的开关后，\n" +
+            "程序才会向 GitHub 查询一次最新版本号，不发送其他信息。"
         );
         updateHintArea.setFont(app.theme.AppFonts.getSmallFont());
         updateHintArea.setForeground(app.theme.ThemeManager.getSecondaryTextColor());
@@ -1448,6 +1451,34 @@ public class SettingsPanel extends JPanel {
         linkRow.add(siteButton);
         linkRow.add(updateButton);
         infoPanel.add(linkRow, gbc);
+
+        gbc.gridy++;
+        JCheckBox updateCheckBox = new JCheckBox("允许检查更新（联网一次 GitHub）");
+        updateCheckBox.setFont(app.theme.AppFonts.getNormalFont());
+        updateCheckBox.setForeground(app.theme.ThemeManager.getTextColor());
+        updateCheckBox.setBackground(app.theme.ThemeManager.getPanelBackgroundColor());
+        updateCheckBox.setSelected(settingsRepository.isUpdateCheckEnabled());
+        infoPanel.add(updateCheckBox, gbc);
+
+        gbc.gridy++;
+        JPanel checkRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        checkRow.setBackground(app.theme.ThemeManager.getPanelBackgroundColor());
+        JButton checkButton = ThemeManager.createNeutralButton("检查更新");
+        checkButton.setEnabled(updateCheckBox.isSelected());
+        JLabel checkStatus = new JLabel(" ");
+        checkStatus.setFont(app.theme.AppFonts.getSmallFont());
+        checkStatus.setForeground(app.theme.ThemeManager.getSecondaryTextColor());
+        checkButton.addActionListener(e -> startUpdateCheck(checkButton, checkStatus));
+        updateCheckBox.addActionListener(e -> {
+            settingsRepository.setUpdateCheckEnabled(updateCheckBox.isSelected());
+            checkButton.setEnabled(updateCheckBox.isSelected());
+            if (!updateCheckBox.isSelected()) {
+                checkStatus.setText(" ");
+            }
+        });
+        checkRow.add(checkButton);
+        checkRow.add(checkStatus);
+        infoPanel.add(checkRow, gbc);
         
         contentContainer.add(infoPanel, BorderLayout.NORTH);
         scrollPane.setViewportView(contentContainer);
@@ -1455,6 +1486,44 @@ public class SettingsPanel extends JPanel {
         
         // 添加到内容面板
         contentPanel.add(aboutPanel, "关于");
+    }
+
+    /** 后台查 GitHub 最新版本，只提示不下载；失败也只提示，不影响其他功能。 */
+    private void startUpdateCheck(JButton button, JLabel statusLabel) {
+        button.setEnabled(false);
+        statusLabel.setText("检查中…");
+        new javax.swing.SwingWorker<UpdateCheck.Result, Void>() {
+            @Override
+            protected UpdateCheck.Result doInBackground() {
+                return UpdateCheck.check(AppVersion.get());
+            }
+
+            @Override
+            protected void done() {
+                button.setEnabled(true);
+                String text;
+                try {
+                    UpdateCheck.Result result = get();
+                    switch (result.status) {
+                        case NEWER:
+                            text = "有新版本 " + result.version + "——不会自动下载，用「查看最新版本」";
+                            break;
+                        case UP_TO_DATE:
+                            text = "已是最新版本（" + result.version + "）";
+                            break;
+                        default:
+                            text = "检查失败：连不上 GitHub，可用「查看最新版本」";
+                            break;
+                    }
+                } catch (InterruptedException ex) {
+                    Thread.currentThread().interrupt();
+                    text = "检查失败：连接被中断，可用「查看最新版本」";
+                } catch (ExecutionException ex) {
+                    text = "检查失败：连不上 GitHub，可用「查看最新版本」";
+                }
+                statusLabel.setText(text);
+            }
+        }.execute();
     }
 
     /**

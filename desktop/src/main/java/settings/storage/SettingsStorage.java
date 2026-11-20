@@ -61,6 +61,7 @@ public class SettingsStorage {
     private static final String KEY_THREAD_POOL_SIZE = "threadPoolSize"; // 线程池大小：用于分卷处理
     private static final String KEY_VOLUME_LIMIT_PRESET = "volumeLimitPreset"; // 单个外部分卷的大小档位
     private static final String KEY_PACKAGE_MULTI_FILES = "packageMultiFiles"; // 多文件默认打包为一个加密包
+    private static final String KEY_UPDATE_CHECK = "updateCheckEnabled"; // 允许「关于」页检查更新
 
     private static final Set<String> KNOWN_KEYS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
             KEY_TEST_MODE,
@@ -69,7 +70,8 @@ public class SettingsStorage {
             KEY_SECURITY_LEVEL,
             KEY_THREAD_POOL_SIZE,
             KEY_VOLUME_LIMIT_PRESET,
-            KEY_PACKAGE_MULTI_FILES)));
+            KEY_PACKAGE_MULTI_FILES,
+            KEY_UPDATE_CHECK)));
 
     // 安全级别常量
     public static final String SECURITY_LEVEL_STRICT = "strict";
@@ -373,6 +375,15 @@ public class SettingsStorage {
 
     public static void setPackageMultiFilesDefault(boolean enabled) {
         put(KEY_PACKAGE_MULTI_FILES, Boolean.toString(enabled));
+    }
+
+    /** 是否允许「关于」页检查更新；默认关闭，关闭时不发任何网络请求。 */
+    public static boolean isUpdateCheckEnabled() {
+        return getBoolean(KEY_UPDATE_CHECK, false);
+    }
+
+    public static void setUpdateCheckEnabled(boolean enabled) {
+        put(KEY_UPDATE_CHECK, Boolean.toString(enabled));
     }
 
     // 设置线程池大小

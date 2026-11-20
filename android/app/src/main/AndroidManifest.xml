@@ -3,6 +3,9 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <!-- 悬浮球入口：用户显式授权后使用的系统级悬浮窗 -->
+    <!-- 仅用于「设置 → 关于 → 检查更新」：默认关闭，开启后才向 GitHub Releases 查询一次版本号。
+         除这一次查询外，应用不访问网络。 -->
+    <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <!-- 悬浮球需要跨应用常驻，由前台服务承载（Phase 1 起） -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />

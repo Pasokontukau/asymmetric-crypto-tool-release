@@ -17,13 +17,16 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -35,6 +38,7 @@ import com.cryptoassistant.app.ui.components.AppCard
 import com.cryptoassistant.app.ui.components.KeyValueRow
 import com.cryptoassistant.app.ui.components.SectionTitle
 import com.cryptoassistant.app.ui.theme.Spacing
+import kotlinx.coroutines.launch
 
 /** 官网与最新版本入口：只交给系统浏览器打开，应用自身不发起任何网络请求。 */
 private const val SITE_URL = "https://pasokontukau.github.io/asymmetric-crypto-tool-release/"
@@ -54,10 +58,23 @@ private fun openLink(context: Context, url: String) {
  * 区分安装包；不参与任何密钥、协议或日志内容。
  */
 @Composable
-fun AboutSettingsScreen(modifier: Modifier = Modifier) {
+fun AboutSettingsScreen(
+    updateCheckEnabled: Boolean,
+    onUpdateCheckEnabledChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+) {
     var showLicensesDialog by remember { mutableStateOf(false) }
     var showGplDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var checking by remember { mutableStateOf(false) }
+    var outcome by remember { mutableStateOf<UpdateCheck.Outcome?>(null) }
+    val statusText = when (val result = outcome) {
+        null -> null
+        UpdateCheck.Outcome.Failed -> stringResource(R.string.about_update_failed)
+        is UpdateCheck.Outcome.UpToDate -> stringResource(R.string.about_up_to_date, result.version)
+        is UpdateCheck.Outcome.Newer -> stringResource(R.string.about_update_available, result.version)
+    }
     val gplLoadFailed = stringResource(R.string.about_gpl_load_failed)
     val gplText = remember {
         runCatching {
@@ -123,6 +140,62 @@ fun AboutSettingsScreen(modifier: Modifier = Modifier) {
                 }
                 TextButton(onClick = { openLink(context, LATEST_RELEASE_URL) }) {
                     Text(stringResource(R.string.about_check_updates))
+                }
+            }
+
+            Spacer(Modifier.height(Spacing.sm))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.about_update_toggle),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    Text(
+                        text = stringResource(R.string.about_update_toggle_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Switch(
+                    checked = updateCheckEnabled,
+                    onCheckedChange = { enabled ->
+                        onUpdateCheckEnabledChange(enabled)
+                        outcome = null
+                    },
+                )
+            }
+
+            Spacer(Modifier.height(Spacing.xs))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+            ) {
+                TextButton(
+                    enabled = updateCheckEnabled && !checking,
+                    onClick = {
+                        checking = true
+                        outcome = null
+                        scope.launch {
+                            outcome = UpdateCheck.check(BuildConfig.VERSION_NAME)
+                            checking = false
+                        }
+                    },
+                ) {
+                    Text(
+                        stringResource(
+                            if (checking) R.string.about_checking else R.string.about_check_now,
+                        ),
+                    )
+                }
+                if (statusText != null) {
+                    Text(
+                        text = statusText,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             }
         }

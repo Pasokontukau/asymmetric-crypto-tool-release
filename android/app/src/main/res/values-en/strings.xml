@@ -180,7 +180,7 @@
     <string name="about_label_build_uuid">Build UUID</string>
     <string name="about_label_build_time">Build time</string>
     <string name="about_build_stage_value">1.0 General availability</string>
-    <string name="about_privacy_body">This is the Android version of a local encryption tool. Keys and content are processed only on this device. The build UUID and build time are used only to distinguish installation packages and contain no device or user information.</string>
+    <string name="about_privacy_body">This is the Android version of a local encryption tool. Keys and content are processed only on this device. The build UUID and build time are used only to distinguish installation packages and contain no device or user information. The only possible network use is the update check you enable on this page: it asks the public GitHub Releases API once for the latest version number and sends no files, keys, or account information.</string>
     <string name="about_section_license">License</string>
     <string name="about_license_body">Crypto Assistant is released under the GNU General Public License v3.0 (GPL-3.0-only). You may copy, modify, and distribute this app under the terms of GPLv3; the source code is provided with the project.</string>
     <string name="about_view_gpl">View full GPLv3</string>
@@ -193,10 +193,19 @@
 
     <!-- Website and updates -->
     <string name="about_section_links">Website &amp; updates</string>
-    <string name="about_links_body">New versions are published on pasokontukau.github.io and in GitHub Releases. This app does not use the network; the buttons below open your browser so you can check the latest version yourself.</string>
+    <string name="about_links_body">New versions are published on pasokontukau.github.io and in GitHub Releases. The app is offline by default; only after you turn on the switch below can it check here directly.</string>
     <string name="about_open_website">Open website</string>
     <string name="about_check_updates">View latest version</string>
     <string name="about_open_link_failed">No browser can open this link</string>
+
+    <!-- In-app update check -->
+    <string name="about_update_toggle">Allow update checks</string>
+    <string name="about_update_toggle_hint">Only when on does the app contact GitHub, and it reads just the latest version number: one request, no device or account information.</string>
+    <string name="about_check_now">Check for updates</string>
+    <string name="about_checking">Checking…</string>
+    <string name="about_up_to_date">You are up to date (%1$s)</string>
+    <string name="about_update_available">Version %1$s is available — it will not download automatically; use “View latest version” above</string>
+    <string name="about_update_failed">Check failed: GitHub is unreachable; use “View latest version” above</string>
 
     <!-- Accessibility disclosure -->
     <string name="a11y_dialog_title">Enable accessibility service</string>

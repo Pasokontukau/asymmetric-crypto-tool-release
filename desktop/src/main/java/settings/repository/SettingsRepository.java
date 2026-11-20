@@ -81,6 +81,14 @@ public class SettingsRepository {
         SettingsStorage.setPackageMultiFilesDefault(enabled);
     }
 
+    public boolean isUpdateCheckEnabled() {
+        return SettingsStorage.isUpdateCheckEnabled();
+    }
+
+    public void setUpdateCheckEnabled(boolean enabled) {
+        SettingsStorage.setUpdateCheckEnabled(enabled);
+    }
+
     public String getDataDir() {
         return SettingsStorage.getDataDir();
     }

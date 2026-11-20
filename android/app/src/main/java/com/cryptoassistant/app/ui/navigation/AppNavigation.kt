@@ -668,7 +668,12 @@ fun AppNavigation(
             }
 
             composable(AppRoutes.SETTINGS_ABOUT) {
-                AboutSettingsScreen()
+                AboutSettingsScreen(
+                    updateCheckEnabled = settings.updateCheckEnabled,
+                    onUpdateCheckEnabledChange = { enabled ->
+                        scope.launch { repository.setUpdateCheckEnabled(enabled) }
+                    },
+                )
             }
         }
     }

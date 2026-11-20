@@ -56,6 +56,7 @@ class SettingsPrivacyTest {
             "file_quick_pipeline",
             "archive_volume_size",
             "package_multiple_files",
+            "update_check_enabled",
             "security_lock",
             "app_lock",
             "lock_timeout_minutes",

@@ -6,7 +6,7 @@
   <meta name="color-scheme" content="dark">
   <meta name="theme-color" content="#0a0c10">
   <title>加密助手 Aegix — 本地离线非对称加密 · 大文件分卷传输</title>
-  <meta name="description" content="加密助手（Aegix）是 Android 与 Windows 共用的本地离线非对称加密工具。AES-256-GCM 加密、大文件分卷、密钥留在本机，Android 版不申请网络权限。">
+  <meta name="description" content="加密助手（Aegix）是 Android 与 Windows 共用的本地离线非对称加密工具。AES-256-GCM 加密、大文件分卷、密钥留在本机；Android 版唯一的联网是可关闭的版本检查。">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <link rel="alternate icon" href="assets/app-icon.png" type="image/png">
   <link rel="apple-touch-icon" href="assets/app-icon.png">
@@ -74,7 +74,7 @@
           <p class="hero-pick" id="hero-pick" hidden></p>
           <p class="hero-more"><a class="text-link" href="download.html">便携版、其它平台与 SHA-256</a></p>
           <ul class="hero-points" aria-label="核心特性">
-            <li><span class="check" aria-hidden="true">✓</span>Android 版不申请网络权限</li>
+            <li><span class="check" aria-hidden="true">✓</span>默认不联网，检查更新可关</li>
             <li><span class="check" aria-hidden="true">✓</span>大文件分卷，50 MB — 2 GB 可调</li>
             <li><span class="check" aria-hidden="true">✓</span>密钥、明文、文件名留在本机</li>
           </ul>
@@ -97,7 +97,7 @@
             <span class="proof-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" focusable="false"><path d="M12 3.5 20 6.7v5.1c0 5-3.3 8.7-8 10.7-4.7-2-8-5.7-8-10.7V6.7L12 3.5Z" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="m8.6 12 2.2 2.2 4.6-4.7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </span>
-            <span><strong>0 个网络权限</strong><small>Android 清单没有 INTERNET</small></span>
+            <span><strong>联网可关</strong><small>只用于查版本，默认关闭</small></span>
           </div>
           <div class="hero-proof hero-proof-desktop">
             <span class="proof-icon" aria-hidden="true">
@@ -111,7 +111,7 @@
 
     <section class="trust" aria-label="关键数据">
       <div class="container trust-grid">
-        <div class="trust-item" data-reveal><strong data-count="0">0</strong><span>Android 网络权限</span></div>
+        <div class="trust-item" data-reveal><strong data-count="0">0</strong><span>遥测、Cookie 与账号</span></div>
         <div class="trust-item" data-reveal style="--d:60ms"><strong data-count="256">256</strong><span>AES-GCM 密钥位数</span></div>
         <div class="trust-item" data-reveal style="--d:120ms"><strong data-count="4096">4096</strong><span>RSA 密钥位数</span></div>
         <div class="trust-item" data-reveal style="--d:180ms"><strong data-count="99">99</strong><span>最多分卷数</span></div>
@@ -187,9 +187,9 @@
             <span class="feature-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 0 1 16 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M7.5 12a4.5 4.5 0 0 1 9 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="12" cy="15.5" r="1.6" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
             </span>
-            <h3>零网络权限</h3>
-            <p>Android 清单没有 <code>INTERNET</code>。这不是「默认不联网」，而是系统层面装不出这项能力；没有遥测、没有 Cookie、没有账号。</p>
-            <span class="feature-tag">0 权限</span>
+            <h3>联网只有一处</h3>
+            <p>Android 清单里只有 <code>INTERNET</code> 一项网络权限，只用于「检查更新」，默认关闭：开启后也只向 GitHub 问一次最新版本号。没有遥测、没有 Cookie、没有账号。</p>
+            <span class="feature-tag">默认关闭</span>
           </article>
 
           <article class="feature-card" data-reveal style="--d:60ms">
@@ -276,10 +276,10 @@
         <div class="security-grid">
           <div class="security-metric" data-reveal>
             <div>
-              <p class="kicker">Android 网络权限</p>
-              <p class="metric-number" aria-hidden="true" data-count="0">0</p>
+              <p class="kicker">联网次数</p>
+              <p class="metric-number" aria-hidden="true" data-count="1">1</p>
             </div>
-            <p class="metric-caption">清单没有申请 <code>INTERNET</code>。这不是「默认不联网」，而是系统层面没有这项权限。</p>
+            <p class="metric-caption">唯一的联网是「检查更新」：只有你打开开关后，才向 GitHub 要一次最新版本号；不发文件、不发密钥、不带账号，关掉就完全不联网。</p>
           </div>
 
           <div class="security-copy">
@@ -289,7 +289,7 @@
               <li data-reveal><span class="list-num">01</span><div><strong>离线完成</strong><p>密钥生成、加解密、签名和分卷都在本机完成，不经过任何服务器。</p></div></li>
               <li data-reveal style="--d:60ms"><span class="list-num">02</span><div><strong>签名对象是明文</strong><p>解密后先验签；签名不匹配时明确提示，不静默接受。</p></div></li>
               <li data-reveal style="--d:120ms"><span class="list-num">03</span><div><strong>文件名只在加密头</strong><p>外层密文文件名只含时间戳与卷号；原文件名保存在加密头里，解密时恢复。</p></div></li>
-              <li data-reveal style="--d:180ms"><span class="list-num">04</span><div><strong>没有遥测</strong><p>Android 版没有网络调用；不上传文件、密钥、文件名或使用记录。</p></div></li>
+              <li data-reveal style="--d:180ms"><span class="list-num">04</span><div><strong>没有遥测</strong><p>不上传文件、密钥、文件名或使用记录；唯一的请求是查版本，且默认关闭。</p></div></li>
             </ul>
           </div>
         </div>
@@ -491,15 +491,15 @@
         <div class="verify-table" data-reveal>
           <div class="verify-row">
             <span class="verify-name">Android APK</span>
-            <code>af06e18fcc393ae74b5e8a5fbf17045188acd19c5baefd94c9032f0d278f89b4</code>
+            <code>52e1976a1944c8ee5fbba16899f5999bf7c8cd445641915edb66eb55622381a3</code>
           </div>
           <div class="verify-row">
             <span class="verify-name">便携 ZIP</span>
-            <code>b2904ac0ff65260fe87e1a8ae0413fc5dd3287f70facfece29735387a3e4dcb0</code>
+            <code>89751b3b92d397249f3cb1d1eb6e749fad3729bb514ff13fa750a6af93cb64d7</code>
           </div>
           <div class="verify-row">
             <span class="verify-name">Windows 安装器</span>
-            <code>28dd12c0a935d3491f7efb617ba5a50d6a15313af932cf13e96d140a24b6e2c8</code>
+            <code>233e6aa9535fe0820e52f7c9a6fe705fa78f7c0c781c52f5114e818023ad11dc</code>
           </div>
         </div>
 
@@ -531,7 +531,7 @@
         <div class="faq-list">
           <details data-reveal>
             <summary>文件会被上传到服务器吗？</summary>
-            <p>不会。Android 应用不申请 <code>INTERNET</code> 权限；密钥生成、加解密、签名和分卷都在本机完成。分享时只把选中的密文文件交给目标应用。</p>
+            <p>不会。密钥生成、加解密、签名和分卷都在本机完成。Android 清单唯一的网络权限 <code>INTERNET</code> 只服务于「设置 → 关于 → 检查更新」：开关默认关闭，开启后也只是向 GitHub 的公开 Releases 接口询问一次最新版本号，不发送文件、密钥或账号信息。分享时只把选中的密文文件交给目标应用。</p>
           </details>
           <details data-reveal>
             <summary>下载要跳转 GitHub 吗？</summary>

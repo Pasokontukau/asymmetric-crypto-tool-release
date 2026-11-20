@@ -129,6 +129,8 @@ data class AppSettings(
     val archiveVolumeSize: ArchiveVolumeSize = ArchiveVolumeSize.DEFAULT,
     /** 多文件/文件夹进入加密页时默认勾选“打包为一个加密包”；单文件不显示入口。 */
     val packageMultipleFiles: Boolean = true,
+    /** 允许「关于」页向 GitHub 查询最新版本；默认关闭，关闭时不会发出任何网络请求。 */
+    val updateCheckEnabled: Boolean = false,
     /** 生物识别安全锁：开启后导出/导入/删除密钥前验证；默认关闭。 */
     val securityLockEnabled: Boolean = false,
     /** 应用锁：打开主界面时验证；默认关闭，且依赖生物识别安全锁。 */
@@ -167,6 +169,7 @@ class SettingsRepository(private val context: Context) {
         val FILE_QUICK_PIPELINE = booleanPreferencesKey("file_quick_pipeline")
         val ARCHIVE_VOLUME_SIZE = stringPreferencesKey("archive_volume_size")
         val PACKAGE_MULTIPLE_FILES = booleanPreferencesKey("package_multiple_files")
+        val UPDATE_CHECK_ENABLED = booleanPreferencesKey("update_check_enabled")
         val SECURITY_LOCK = booleanPreferencesKey("security_lock")
         val APP_LOCK = booleanPreferencesKey("app_lock")
         val LOCK_TIMEOUT_MINUTES = intPreferencesKey("lock_timeout_minutes")
@@ -199,6 +202,7 @@ class SettingsRepository(private val context: Context) {
                 fileQuickPipeline = prefs[Keys.FILE_QUICK_PIPELINE] ?: false,
                 archiveVolumeSize = ArchiveVolumeSize.fromStored(prefs[Keys.ARCHIVE_VOLUME_SIZE]),
                 packageMultipleFiles = prefs[Keys.PACKAGE_MULTIPLE_FILES] ?: true,
+                updateCheckEnabled = prefs[Keys.UPDATE_CHECK_ENABLED] ?: false,
                 securityLockEnabled = prefs[Keys.SECURITY_LOCK] ?: false,
                 appLockEnabled = prefs[Keys.APP_LOCK] ?: false,
                 // 旧版本可存 1/5/30 分钟；读出来统一归一到「立即」或「10 分钟后」。
@@ -277,6 +281,12 @@ class SettingsRepository(private val context: Context) {
     suspend fun setPackageMultipleFiles(enabled: Boolean) {
         AppLog.debug("settings.change", "key=packageMultipleFiles value=$enabled")
         context.settingsDataStore.edit { it[Keys.PACKAGE_MULTIPLE_FILES] = enabled }
+    }
+
+    /** 是否允许「关于」页检查更新；关闭时不发任何请求（手动点按钮也不行）。 */
+    suspend fun setUpdateCheckEnabled(enabled: Boolean) {
+        AppLog.debug("settings.change", "key=updateCheck value=$enabled")
+        context.settingsDataStore.edit { it[Keys.UPDATE_CHECK_ENABLED] = enabled }
     }
 
     /**
