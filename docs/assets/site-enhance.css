@@ -584,12 +584,12 @@
   display: none;
 }
 
-[data-platform="windows"] .phone-hero,
-[data-platform="windows"] .hero-proof-android {
+[data-view="desktop"] .phone-hero,
+[data-view="desktop"] .hero-proof-android {
   display: none;
 }
 
-[data-platform="windows"] .desktop-hero {
+[data-view="desktop"] .desktop-hero {
   display: block;
   position: relative;
   z-index: 1;
@@ -614,7 +614,7 @@
   height: auto;
 }
 
-[data-platform="windows"] .hero-proof-desktop {
+[data-view="desktop"] .hero-proof-desktop {
   display: flex;
 }
 

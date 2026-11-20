@@ -82,6 +82,9 @@
     platform = 'linux';
   }
   document.documentElement.setAttribute('data-platform', platform);
+  // 首屏用哪张图：桌面系统（含 macOS/Linux）看桌面截图，Android 看手机，其余保持手机
+  var desktopPlatforms = { windows: 1, mac: 1, linux: 1 };
+  document.documentElement.setAttribute('data-view', desktopPlatforms[platform] ? 'desktop' : 'mobile');
 
   /* screenshot 分组只显示本平台的：具体隐藏规则在 site-enhance.css，这里只负责写入 data-platform */
 
