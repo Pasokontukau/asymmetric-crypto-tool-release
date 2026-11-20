@@ -190,7 +190,7 @@
 
     <!-- 官网与更新 -->
     <string name="about_section_links">官网与更新</string>
-    <string name="about_links_body">新版本发布在官网与 GitHub Releases。本应用不联网，点下面的按钮会用系统浏览器打开，最新版本由你自己查看。</string>
+    <string name="about_links_body">新版本发布在官网 pasokontukau.github.io 与 GitHub Releases。本应用不联网，点下面的按钮会用系统浏览器打开，最新版本由你自己查看。</string>
     <string name="about_open_website">打开官网</string>
     <string name="about_check_updates">查看最新版本</string>
     <string name="about_open_link_failed">没有可以打开链接的浏览器</string>

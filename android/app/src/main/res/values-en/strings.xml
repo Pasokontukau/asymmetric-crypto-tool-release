@@ -193,7 +193,7 @@
 
     <!-- Website and updates -->
     <string name="about_section_links">Website &amp; updates</string>
-    <string name="about_links_body">New versions are published on the website and in GitHub Releases. This app does not use the network; the buttons below open your browser so you can check the latest version yourself.</string>
+    <string name="about_links_body">New versions are published on pasokontukau.github.io and in GitHub Releases. This app does not use the network; the buttons below open your browser so you can check the latest version yourself.</string>
     <string name="about_open_website">Open website</string>
     <string name="about_check_updates">View latest version</string>
     <string name="about_open_link_failed">No browser can open this link</string>

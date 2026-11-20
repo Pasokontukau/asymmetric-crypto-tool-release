@@ -1425,15 +1425,9 @@ public class SettingsPanel extends JPanel {
         infoPanel.add(linksSeparator, gbc);
 
         gbc.gridy++;
-        JLabel siteLabel = new JLabel("官网: " + SITE_URL);
-        siteLabel.setFont(app.theme.AppFonts.getSmallFont());
-        siteLabel.setForeground(app.theme.ThemeManager.getSecondaryTextColor());
-        infoPanel.add(siteLabel, gbc);
-
-        gbc.gridy++;
         JTextArea updateHintArea = new JTextArea(
-            "新版本发布在官网与 GitHub Releases。下面的按钮会用系统浏览器打开；\n" +
-            "程序本身不联网，也不会向任何服务器上报信息。"
+            "新版本发布在官网 pasokontukau.github.io 与 GitHub Releases。\n" +
+            "下面的按钮会用系统浏览器打开；程序本身不联网，也不会上报信息。"
         );
         updateHintArea.setFont(app.theme.AppFonts.getSmallFont());
         updateHintArea.setForeground(app.theme.ThemeManager.getSecondaryTextColor());
@@ -1464,25 +1458,17 @@ public class SettingsPanel extends JPanel {
     }
 
     /**
-     * 用系统浏览器打开链接；打不开时把地址显示出来，让用户自己复制。
+     * 用系统浏览器打开链接；没有桌面环境或默认浏览器时把地址显示出来，让用户自己打开。
      *
-     * 程序本身不发起网络请求：要做联网的版本检查得先加权限与隐私说明，这里只负责交给浏览器。
+     * 程序本身不发起网络请求：联网的版本检查要先加权限与隐私说明，这里只负责交给浏览器。
      */
     private void openExternalLink(String url) {
         try {
-            if (!Desktop.isDesktopSupported()
-                    || !Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
-                throw new UnsupportedOperationException("browse 不可用");
-            }
             Desktop.getDesktop().browse(new URI(url));
         } catch (Exception ex) {
-            JTextArea address = new JTextArea(url);
-            address.setEditable(false);
-            address.setLineWrap(true);
-            address.setWrapStyleWord(true);
-            address.setFont(app.theme.AppFonts.getSmallFont());
-            JOptionPane.showMessageDialog(
-                    this, address, "请在浏览器中手动打开", JOptionPane.INFORMATION_MESSAGE);
+            // 无桌面 API（HeadlessException）、无默认浏览器（IOException）或地址非法都落在这里。
+            JOptionPane.showMessageDialog(this, "无法打开浏览器，请手动访问：\n" + url,
+                    "打开链接失败", JOptionPane.INFORMATION_MESSAGE);
         }
     }
     

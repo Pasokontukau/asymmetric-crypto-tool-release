@@ -43,12 +43,8 @@ private const val LATEST_RELEASE_URL =
 
 /** 用系统浏览器打开链接；没有可用浏览器时给一句提示，不静默失败。 */
 private fun openLink(context: Context, url: String) {
-    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-    runCatching { context.startActivity(intent) }
-        .onFailure {
-            Toast.makeText(context, R.string.about_open_link_failed, Toast.LENGTH_SHORT).show()
-        }
+    runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }
+        .onFailure { Toast.makeText(context, R.string.about_open_link_failed, Toast.LENGTH_SHORT).show() }
 }
 
 /**
@@ -115,12 +111,6 @@ fun AboutSettingsScreen(modifier: Modifier = Modifier) {
         SectionTitle(stringResource(R.string.about_section_links))
 
         AppCard {
-            Text(
-                text = SITE_URL,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.primary,
-            )
-            Spacer(Modifier.height(Spacing.xs))
             Text(
                 text = stringResource(R.string.about_links_body),
                 style = MaterialTheme.typography.bodySmall,
