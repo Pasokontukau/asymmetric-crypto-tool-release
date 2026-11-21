@@ -534,6 +534,10 @@
             <p>不会。密钥生成、加解密、签名和分卷都在本机完成。Android 清单唯一的网络权限 <code>INTERNET</code> 只服务于「设置 → 关于 → 检查更新」：开关默认关闭，开启后也只是向 GitHub 的公开 Releases 接口询问一次最新版本号，不发送文件、密钥或账号信息。分享时只把选中的密文文件交给目标应用。</p>
           </details>
           <details data-reveal>
+            <summary>安装时看到的「网络访问」权限是做什么的？</summary>
+            <p>只用于「检查更新」，不会在启动、打开文件或加解密时联网。Android 安装时列出的 <code>INTERNET</code> 是应用唯一的网络权限，它服务于 <strong>设置 → 关于</strong> 里的「允许检查更新」开关（<strong>默认关闭</strong>）：只有你打开开关并点「检查更新」，应用才会向 GitHub 的公开 Releases 接口发一次请求，只读最新版本号，不带设备或账号信息；发现新版本只提示，不下载、不安装，关掉开关后完全不联网。桌面版的开关在同一位置、同样默认关闭；「打开官网」与「查看最新版本」这类按钮一律交给系统浏览器，应用自身不发请求。</p>
+          </details>
+          <details data-reveal>
             <summary>下载要跳转 GitHub 吗？</summary>
             <p>不需要。上面的按钮是 Release 文件的直链，点击即开始下载，不会打开仓库页面。只有「参与开发」里的链接会去 GitHub。</p>
           </details>
