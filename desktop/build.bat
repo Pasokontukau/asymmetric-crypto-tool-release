@@ -68,7 +68,11 @@ echo Maven: %MVN%
 echo Running build...
 echo.
 
-call "%MVN%" clean package -DskipTests
+REM Record the source commit into the jar manifest (Implementation-Build), so the About
+REM page can say which commit produced this build.
+set "GIT_COMMIT=unknown"
+for /f "delims=" %%i in ('git -C "%CD%\.." rev-parse --short=9 HEAD 2^>nul') do set "GIT_COMMIT=%%i"
+call "%MVN%" clean package -DskipTests "-Dgit.commit=%GIT_COMMIT%"
 if errorlevel 1 (
     echo.
     echo BUILD FAILED

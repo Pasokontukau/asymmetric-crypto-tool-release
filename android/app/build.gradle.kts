@@ -12,6 +12,18 @@ val buildTime: String = try {
     "unknown"
 }
 
+// 源码提交：回答「这个安装包是哪个提交打的」。没有 git（源码压缩包）或命令失败时写
+// unknown，不猜测；构建时工作树不干净也算 HEAD，真实性由 dist/BUILD-INFO.txt 记录。
+val gitCommit: String = try {
+    val process = ProcessBuilder(
+        "git", "-C", rootProject.projectDir.absolutePath, "rev-parse", "--short=9", "HEAD",
+    ).redirectErrorStream(true).start()
+    val output = process.inputStream.bufferedReader().use { it.readText() }.trim()
+    if (process.waitFor() == 0 && output.matches(Regex("[0-9a-f]{7,40}"))) output else "unknown"
+} catch (e: Exception) {
+    "unknown"
+}
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -38,6 +50,7 @@ android {
         // 构建 UUID（每次构建唯一）与编译时间，均只读，不落盘、不用于任何协议逻辑。
         buildConfigField("String", "BUILD_UUID", "\"$buildUuid\"")
         buildConfigField("String", "BUILD_TIME", "\"$buildTime\"")
+        buildConfigField("String", "GIT_COMMIT", "\"$gitCommit\"")
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 

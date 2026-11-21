@@ -179,6 +179,7 @@
     <string name="about_label_application_id">Application ID</string>
     <string name="about_label_build_uuid">Build UUID</string>
     <string name="about_label_build_time">Build time</string>
+    <string name="about_label_build_commit">Source commit</string>
     <string name="about_build_stage_value">1.0 General availability</string>
     <string name="about_privacy_body">This is the Android version of a local encryption tool. Keys and content are processed only on this device. The build UUID and build time are used only to distinguish installation packages and contain no device or user information. The only possible network use is the update check you enable on this page: it asks the public GitHub Releases API once for the latest version number and sends no files, keys, or account information.</string>
     <string name="about_section_license">License</string>

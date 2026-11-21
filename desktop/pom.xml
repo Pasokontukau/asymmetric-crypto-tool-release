@@ -17,6 +17,9 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <!-- 与 shared/crypto-core/build.gradle.kts 的 version 保持一致；升级内核时两处同步。 -->
         <crypto-core.version>1.4.0</crypto-core.version>
+        <!-- 源码提交，由 build/package 脚本用 git 算出并传进来（-Dgit.commit=...）。
+             直接 mvn package 时保持 unknown，不猜测。 -->
+        <git.commit>unknown</git.commit>
     </properties>
 
     <dependencies>
@@ -100,6 +103,11 @@
                                  不在代码里重复写死版本号（见 app/AppVersion.java）。 -->
                             <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
                         </manifest>
+                        <!-- 源码提交进清单，关于页显示「源码提交」；见 app/AppVersion.java。
+                             manifestEntries 是 archive 的子元素，不能放进 manifest 里。 -->
+                        <manifestEntries>
+                            <Implementation-Build>${git.commit}</Implementation-Build>
+                        </manifestEntries>
                     </archive>
                     <descriptorRefs>
                         <descriptorRef>jar-with-dependencies</descriptorRef>

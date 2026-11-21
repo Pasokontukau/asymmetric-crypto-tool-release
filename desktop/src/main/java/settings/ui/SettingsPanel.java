@@ -1382,7 +1382,14 @@ public class SettingsPanel extends JPanel {
         versionLabel.setFont(app.theme.AppFonts.getNormalFont());
         versionLabel.setForeground(app.theme.ThemeManager.getTextColor());
         infoPanel.add(versionLabel, gbc);
-        
+
+        gbc.gridy++;
+        // 源码提交：回答「这个安装包是哪个提交打的」，由打包脚本写进 jar 清单。
+        JLabel commitLabel = new JLabel("源码提交: " + AppVersion.build());
+        commitLabel.setFont(app.theme.AppFonts.getNormalFont());
+        commitLabel.setForeground(app.theme.ThemeManager.getTextColor());
+        infoPanel.add(commitLabel, gbc);
+
         gbc.gridy++;
         JLabel javaVersionLabel = new JLabel("Java 版本: " + System.getProperty("java.version"));
         javaVersionLabel.setFont(app.theme.AppFonts.getNormalFont());

@@ -117,6 +117,10 @@ fun AboutSettingsScreen(
                 stringResource(R.string.about_label_build_time),
                 BuildConfig.BUILD_TIME,
             )
+            KeyValueRow(
+                stringResource(R.string.about_label_build_commit),
+                BuildConfig.GIT_COMMIT,
+            )
             Spacer(Modifier.height(Spacing.sm))
             Text(
                 text = stringResource(R.string.about_privacy_body),

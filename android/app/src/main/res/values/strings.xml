@@ -176,6 +176,7 @@
     <string name="about_label_application_id">应用 ID</string>
     <string name="about_label_build_uuid">构建 UUID</string>
     <string name="about_label_build_time">编译时间</string>
+    <string name="about_label_build_commit">源码提交</string>
     <string name="about_build_stage_value">1.0 正式发布</string>
     <string name="about_privacy_body">本应用为本地加密工具的 Android 版本，密钥与内容只在设备上处理。构建 UUID 与编译时间只用于区分安装包，不包含设备或用户信息。唯一可能联网的地方是你在本页开启的「检查更新」：它只向 GitHub 的公开 Releases 接口询问一次最新版本号，不发送任何文件、密钥或账号信息。</string>
     <string name="about_section_license">许可证</string>
