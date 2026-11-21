@@ -123,9 +123,19 @@ public final class UpdateCheck {
 
     /** 阻塞检查；调用方负责放到后台线程。 */
     public static Result check(String currentVersion) {
+        return check(currentVersion, LATEST_RELEASE_API);
+    }
+
+    /**
+     * 同一个检查，但地址可注入：包内可见，仅供测试用本地 HTTP 服务覆盖网络路径。
+     *
+     * <p>这是整个应用里唯一会联网的代码，{@code NetworkIsolationTest} 扫描 {@code src/main/java}
+     * 保证别处没有网络 API。</p>
+     */
+    static Result check(String currentVersion, String apiUrl) {
         String tag;
         try {
-            tag = fetchLatestTag();
+            tag = fetchLatestTag(apiUrl);
         } catch (Exception ex) {
             return Result.failed();
         }
@@ -142,8 +152,8 @@ public final class UpdateCheck {
         return Result.upToDate(currentVersion);
     }
 
-    private static String fetchLatestTag() throws Exception {
-        HttpURLConnection connection = (HttpURLConnection) new URL(LATEST_RELEASE_API).openConnection();
+    private static String fetchLatestTag(String apiUrl) throws Exception {
+        HttpURLConnection connection = (HttpURLConnection) new URL(apiUrl).openConnection();
         try {
             connection.setConnectTimeout(TIMEOUT_MS);
             connection.setReadTimeout(TIMEOUT_MS);

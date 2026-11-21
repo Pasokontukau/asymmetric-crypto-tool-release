@@ -11,6 +11,9 @@ import kotlinx.coroutines.withContext
  * 语义（与桌面端 `app.UpdateCheck` 一致）：只有用户打开「允许检查更新」后才会联网；每次检查
  * 向 GitHub 的公开 Releases API 发一次匿名 GET，只读 `tag_name`，不带任何本机信息、不带
  * 账号；发现新版本只提示，不下载、不安装。
+ *
+ * 这是整个应用里**唯一**会联网的代码：`NetworkIsolationTest` 会扫描 `src/main`，除本文件
+ * 外不允许出现任何网络 API。
  */
 object UpdateCheck {
 
@@ -53,18 +56,27 @@ object UpdateCheck {
             .map { segment -> segment.takeWhile { it.isDigit() }.toIntOrNull() ?: 0 }
 
     /** 联网一次并给出结论；任何网络/解析问题都归为 [Outcome.Failed]，不抛给界面。 */
-    suspend fun check(currentVersion: String): Outcome = withContext(Dispatchers.IO) {
-        val tag = runCatching { fetchLatestTag() }.getOrNull()
-            ?: return@withContext Outcome.Failed
-        if (isNewer(tag, currentVersion)) {
+    suspend fun check(currentVersion: String): Outcome =
+        withContext(Dispatchers.IO) { checkBlocking(currentVersion, LATEST_RELEASE_API) }
+
+    /**
+     * 同步实现，[apiUrl] 可注入以便用本地 HTTP 服务测网络路径；只能在后台线程调用
+     * （Android 主线程联网会抛 `NetworkOnMainThreadException`）。
+     */
+    internal fun checkBlocking(
+        currentVersion: String,
+        apiUrl: String = LATEST_RELEASE_API,
+    ): Outcome {
+        val tag = runCatching { fetchLatestTag(apiUrl) }.getOrNull() ?: return Outcome.Failed
+        return if (isNewer(tag, currentVersion)) {
             Outcome.Newer(tag.removePrefix("v").removePrefix("V"))
         } else {
             Outcome.UpToDate(currentVersion)
         }
     }
 
-    private fun fetchLatestTag(): String? {
-        val connection = URL(LATEST_RELEASE_API).openConnection() as HttpURLConnection
+    private fun fetchLatestTag(apiUrl: String): String? {
+        val connection = URL(apiUrl).openConnection() as HttpURLConnection
         return try {
             connection.connectTimeout = TIMEOUT_MS
             connection.readTimeout = TIMEOUT_MS

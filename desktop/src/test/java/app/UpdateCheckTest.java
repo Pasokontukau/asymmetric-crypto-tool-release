@@ -7,7 +7,7 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
-/** 版本检查的解析与比较是纯函数，这里把它们钉住；联网部分不测（要用真实 GitHub）。 */
+/** 解析与比较是纯函数，这里把它们钉住；网络路径见 {@link UpdateCheckHttpTest}，联网隔离见 {@link NetworkIsolationTest}。 */
 public class UpdateCheckTest {
 
     @Test
