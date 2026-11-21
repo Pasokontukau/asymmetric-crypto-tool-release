@@ -72,6 +72,13 @@ public class SettingsPanel extends JPanel {
     private final history.repository.HistoryRepository historyRepository =
             new history.repository.HistoryRepository();
 
+    /** 检查更新失败（含取不到结果）时的唯一提示，与 Android 的 `about_update_failed` 同义。 */
+    private static final String UPDATE_CHECK_FAILED =
+            "检查失败：连不上 GitHub，可用「查看最新版本」";
+
+    /** 「关于」页的检查更新是否在跑：跑的时候开关不能把按钮重新点亮。 */
+    private boolean updateCheckRunning;
+
     private JSplitPane splitPane;
     private JList<String> menuList;
     private CardLayout cardLayout;
@@ -1429,8 +1436,8 @@ public class SettingsPanel extends JPanel {
         gbc.gridy++;
         JTextArea updateHintArea = new JTextArea(
             "新版本发布在官网 pasokontukau.github.io 与 GitHub Releases。\n" +
-            "「打开官网」与「查看最新版本」用系统浏览器打开；开启下面的开关后，\n" +
-            "程序才会向 GitHub 查询一次最新版本号，不发送其他信息。"
+            "「打开官网」与「查看最新版本」用系统浏览器打开；程序默认不联网，\n" +
+            "开启下面的开关才能在这里直接检查。"
         );
         updateHintArea.setFont(app.theme.AppFonts.getSmallFont());
         updateHintArea.setForeground(app.theme.ThemeManager.getSecondaryTextColor());
@@ -1468,13 +1475,12 @@ public class SettingsPanel extends JPanel {
         JLabel checkStatus = new JLabel(" ");
         checkStatus.setFont(app.theme.AppFonts.getSmallFont());
         checkStatus.setForeground(app.theme.ThemeManager.getSecondaryTextColor());
-        checkButton.addActionListener(e -> startUpdateCheck(checkButton, checkStatus));
+        checkButton.addActionListener(e -> startUpdateCheck(checkButton, checkStatus, updateCheckBox));
         updateCheckBox.addActionListener(e -> {
             settingsRepository.setUpdateCheckEnabled(updateCheckBox.isSelected());
-            checkButton.setEnabled(updateCheckBox.isSelected());
-            if (!updateCheckBox.isSelected()) {
-                checkStatus.setText(" ");
-            }
+            checkButton.setEnabled(updateCheckBox.isSelected() && !updateCheckRunning);
+            // 与 Android 一致：只要动了开关，上一次的结论就不再适应当前设置。
+            checkStatus.setText(" ");
         });
         checkRow.add(checkButton);
         checkRow.add(checkStatus);
@@ -1489,7 +1495,8 @@ public class SettingsPanel extends JPanel {
     }
 
     /** 后台查 GitHub 最新版本，只提示不下载；失败也只提示，不影响其他功能。 */
-    private void startUpdateCheck(JButton button, JLabel statusLabel) {
+    private void startUpdateCheck(JButton button, JLabel statusLabel, JCheckBox toggle) {
+        updateCheckRunning = true;
         button.setEnabled(false);
         statusLabel.setText("检查中…");
         new javax.swing.SwingWorker<UpdateCheck.Result, Void>() {
@@ -1500,36 +1507,43 @@ public class SettingsPanel extends JPanel {
 
             @Override
             protected void done() {
-                button.setEnabled(true);
-                String text;
+                updateCheckRunning = false;
+                // 检查期间用户可能已经关了开关，此时不该把按钮重新点亮。
+                button.setEnabled(toggle.isSelected());
+                UpdateCheck.Result result;
                 try {
-                    UpdateCheck.Result result = get();
-                    switch (result.status) {
-                        case NEWER:
-                            text = "有新版本 " + result.version + "——不会自动下载，用「查看最新版本」";
-                            break;
-                        case UP_TO_DATE:
-                            text = "已是最新版本（" + result.version + "）";
-                            break;
-                        default:
-                            text = "检查失败：连不上 GitHub，可用「查看最新版本」";
-                            break;
-                    }
+                    result = get();
                 } catch (InterruptedException ex) {
+                    // 程序退出或线程被中断：与网络失败同一个结论，不猜具体原因。
                     Thread.currentThread().interrupt();
-                    text = "检查失败：连接被中断，可用「查看最新版本」";
+                    result = null;
                 } catch (ExecutionException ex) {
-                    text = "检查失败：连不上 GitHub，可用「查看最新版本」";
+                    result = null;
                 }
-                statusLabel.setText(text);
+                statusLabel.setText(updateStatusText(result));
             }
         }.execute();
+    }
+
+    /** 把检查结果译成一行状态；null（取不到结果）与 FAILED 用同一句话。 */
+    private static String updateStatusText(UpdateCheck.Result result) {
+        if (result == null) {
+            return UPDATE_CHECK_FAILED;
+        }
+        switch (result.status) {
+            case NEWER:
+                return "有新版本 " + result.version + "——不会自动下载，用「查看最新版本」";
+            case UP_TO_DATE:
+                return "已是最新版本（" + result.version + "）";
+            default:
+                return UPDATE_CHECK_FAILED;
+        }
     }
 
     /**
      * 用系统浏览器打开链接；没有桌面环境或默认浏览器时把地址显示出来，让用户自己打开。
      *
-     * 程序本身不发起网络请求：联网的版本检查要先加权限与隐私说明，这里只负责交给浏览器。
+     * 这里不联网：程序唯一的网络请求是「检查更新」（`app.UpdateCheck`），本方法只交给浏览器。
      */
     private void openExternalLink(String url) {
         try {

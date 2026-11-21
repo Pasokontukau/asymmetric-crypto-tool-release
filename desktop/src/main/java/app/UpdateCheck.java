@@ -89,12 +89,17 @@ public final class UpdateCheck {
         return 0;
     }
 
-    private static int[] numericParts(String version) {
+    /** {@code v1.4.2} 与 {@code 1.4.2} 是同一版本：比较与展示都用去掉前缀的形式。 */
+    private static String plainVersion(String version) {
         String trimmed = version == null ? "" : version.trim();
         if (trimmed.startsWith("v") || trimmed.startsWith("V")) {
-            trimmed = trimmed.substring(1);
+            return trimmed.substring(1);
         }
-        String[] segments = trimmed.split("\\.", -1);
+        return trimmed;
+    }
+
+    private static int[] numericParts(String version) {
+        String[] segments = plainVersion(version).split("\\.", -1);
         int[] parts = new int[segments.length];
         for (int index = 0; index < segments.length; index++) {
             parts[index] = leadingNumber(segments[index]);
@@ -142,14 +147,9 @@ public final class UpdateCheck {
         if (tag == null) {
             return Result.failed();
         }
-        if (isNewer(tag, currentVersion)) {
-            String remote = tag;
-            if (remote.startsWith("v") || remote.startsWith("V")) {
-                remote = remote.substring(1);
-            }
-            return Result.newer(remote);
-        }
-        return Result.upToDate(currentVersion);
+        return isNewer(tag, currentVersion)
+                ? Result.newer(plainVersion(tag))
+                : Result.upToDate(currentVersion);
     }
 
     private static String fetchLatestTag(String apiUrl) throws Exception {

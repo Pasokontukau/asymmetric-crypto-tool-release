@@ -2,6 +2,7 @@ package com.cryptoassistant.app.feature.settings
 
 import java.net.HttpURLConnection
 import java.net.URL
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -48,10 +49,12 @@ object UpdateCheck {
         return 0
     }
 
+    /** `v1.4.2` 与 `1.4.2` 是同一版本：比较与展示都用去掉前缀的形式。 */
+    private fun plainVersion(version: String): String =
+        version.trim().removePrefix("v").removePrefix("V")
+
     private fun numericParts(version: String): List<Int> =
-        version.trim()
-            .removePrefix("v")
-            .removePrefix("V")
+        plainVersion(version)
             .split('.')
             .map { segment -> segment.takeWhile { it.isDigit() }.toIntOrNull() ?: 0 }
 
@@ -60,16 +63,22 @@ object UpdateCheck {
         withContext(Dispatchers.IO) { checkBlocking(currentVersion, LATEST_RELEASE_API) }
 
     /**
-     * 同步实现，[apiUrl] 可注入以便用本地 HTTP 服务测网络路径；只能在后台线程调用
-     * （Android 主线程联网会抛 `NetworkOnMainThreadException`）。
+     * 同步实现：[apiUrl] 由调用方给出（生产传 [LATEST_RELEASE_API]，测试传本地 HTTP 服务），
+     * 没有默认值，避免测试意外打到真实网络。只能在后台线程调用（Android 主线程联网会抛
+     * `NetworkOnMainThreadException`）。
      */
-    internal fun checkBlocking(
-        currentVersion: String,
-        apiUrl: String = LATEST_RELEASE_API,
-    ): Outcome {
-        val tag = runCatching { fetchLatestTag(apiUrl) }.getOrNull() ?: return Outcome.Failed
+    internal fun checkBlocking(currentVersion: String, apiUrl: String): Outcome {
+        // 只把「连不上 / 解析不了」折算成 Failed。取消与 Error 必须继续往上抛，否则用户离开
+        // 页面或发生致命错误都会被伪装成「检查失败」。
+        val tag = try {
+            fetchLatestTag(apiUrl)
+        } catch (cancellation: CancellationException) {
+            throw cancellation
+        } catch (failure: Exception) {
+            null
+        } ?: return Outcome.Failed
         return if (isNewer(tag, currentVersion)) {
-            Outcome.Newer(tag.removePrefix("v").removePrefix("V"))
+            Outcome.Newer(plainVersion(tag))
         } else {
             Outcome.UpToDate(currentVersion)
         }

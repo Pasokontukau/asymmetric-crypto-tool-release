@@ -40,7 +40,7 @@ import com.cryptoassistant.app.ui.components.SectionTitle
 import com.cryptoassistant.app.ui.theme.Spacing
 import kotlinx.coroutines.launch
 
-/** 官网与最新版本入口：只交给系统浏览器打开，应用自身不发起任何网络请求。 */
+/** 官网与最新版本入口：只交给系统浏览器打开；应用唯一的网络请求是下面的「检查更新」。 */
 private const val SITE_URL = "https://pasokontukau.github.io/asymmetric-crypto-tool-release/"
 private const val LATEST_RELEASE_URL =
     "https://github.com/Pasokontukau/asymmetric-crypto-tool-release/releases/latest"
@@ -179,8 +179,12 @@ fun AboutSettingsScreen(
                         checking = true
                         outcome = null
                         scope.launch {
-                            outcome = UpdateCheck.check(BuildConfig.VERSION_NAME)
-                            checking = false
+                            // finally 保证离开页面被取消时“检查中…”也不会卡住。
+                            try {
+                                outcome = UpdateCheck.check(BuildConfig.VERSION_NAME)
+                            } finally {
+                                checking = false
+                            }
                         }
                     },
                 ) {
