@@ -1,6 +1,6 @@
 # 加密助手 · Android 端
 
-> 当前阶段：Android 主功能已实现，当前源码版本 **`1.4.1` / versionCode 27**（applicationId `com.cryptoassistant.app`）；许可证 **GPL-3.0-only**。项目按**开源、侧载分发**推进，**不计划上架 Google Play 或国内应用商店**。
+> 当前阶段：Android 主功能已实现，当前源码版本 **`1.4.2` / versionCode 28**（applicationId `com.cryptoassistant.app`）；许可证 **GPL-3.0-only**。项目按**开源、侧载分发**推进，**不计划上架 Google Play 或国内应用商店**。
 > 功能包括源码审计、首页「使用说明」工具书（8 章 33 节）、**简体中文 / English 双语界面（跟随系统或 Android 13+ 应用语言）**、悬浮球标准/便捷模式、文件/目录流式加解密、VOLU 单卷读取与外部分卷写入、合卷后安全解压、VIEW/SEND 单入口判型、完整密钥备份、可选生物识别安全锁（密钥与日志敏感操作前验证）与可选应用锁（只锁主界面，默认关），分级诊断日志、缓存清理与租约、T9 胶囊展开、T12 便捷模式磁贴、T13 每次点球的无障碍引导面板、**D20 输入框结构日志/写后回读探针**，以及 **T14 阶段 1–3 的点球整框读取、写前重读与 150/800ms 回读验证**。真机矩阵仍有未完成项，见下方交接状态与局限。
 > **文字加解密只发生在悬浮球**：应用内不提供独立的文字加解密页。
 > 文件加解密在「文件」页完成：SAF 可一次选多个文件，或选一个文件夹递归收集，按顺序流式处理；
@@ -212,7 +212,7 @@ export JAVA_HOME="$HOME/.jdks/corretto-17"   # Windows Git Bash
 ```
 
 产物：`android/app/build/outputs/apk/debug/app-debug.apk`
-（当前源码 `1.4.1` / `versionCode 27`；debug APK 体积与 sha256 每次构建都可能变化。旧 1.3.0/25 包早于 P1/P2/P4，不能用于新功能验收）
+（当前源码 `1.4.2` / `versionCode 28`；debug APK 体积与 sha256 每次构建都可能变化。旧 1.3.0/25 包早于 P1/P2/P4，不能用于新功能验收）
 
 安装到已连接的设备/模拟器：
 
@@ -600,7 +600,8 @@ com.cryptoassistant.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION   # AndroidX �
    `gradlew :app:testDebugUnitTest :crypto-core:test "-Pdesktop.root=<仓库>\src\main\java"`。
 2026-11-12 复核：同一提交放到纯 ASCII 路径、用默认 UTF-8 跑，全部通过——限制来自**路径字符集**，
 与代码和产品编码无关。项目因此统一 UTF-8，只有路径含中文时才临时给 worker 加 `GBK` 兼容参数（见
-   [踩坑 P-01](../docs/agent/pitfalls.md)）。当前基线：app **288/288（46 suites）**、crypto-core **94/94**；
+   [踩坑 P-01](../docs/agent/pitfalls.md)）。当前测试计数与验收结论见[项目现状报告顶部](../docs/android/项目现状报告与交接指南.md)；
+   本段保留 2026-11-12 的历史基线（app **288/288（46 suites）**、crypto-core **94/94**）；
    `lintDebug` **0 errors / 34 warnings**（warning 随文案/依赖漂移）。构建、Lint、安装与设备验证不受影响。
 2. **仅用模拟器验收**：Pixel_7 AVD（Android 17）上完成；尚未在真实厂商 ROM 上验证
    悬浮球被系统停止/自启动限制等行为。
@@ -785,7 +786,7 @@ com.cryptoassistant.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION   # AndroidX �
 
 | 依赖 | 版本 | 许可证 | 用途 |
 |---|---|---|---|
-| **加密助手（本应用）** | **1.4.1** | **GPL-3.0-only** | 应用本体；源码随仓库提供 |
+| **加密助手（本应用）** | **1.4.2** | **GPL-3.0-only** | 应用本体；源码随仓库提供 |
 | AndroidX Core KTX | 1.17.0 | Apache-2.0 | 基础 KTX |
 | AndroidX Activity Compose | 1.12.4 | Apache-2.0 | Compose Activity / 权限请求 |
 | AndroidX Lifecycle | 2.9.4 | Apache-2.0 | 生命周期与状态收集 |
@@ -833,7 +834,7 @@ android/
 │       ├── FloatingBallContent.kt        # Compose 圆形球、菜单与同窗口形变
 │       └── OverlayLifecycleOwner.kt      # 悬浮窗 Compose owner + detached 释放策略
 ├── app/src/test/                          # 288 tests / 46 suites（2026-11-06，含 SAF 解压 8 例与 N2 合并结果 1 例）；分域：密钥、文件、入口、面板/接收方、overlay、日志、磁贴、安全锁、归档
-├── app/src/androidTest/                   # 11 个测试类、56 个 @Test：互操作 5 + 密钥/Keystore 4 + 文字动作 6 + e2e 6 + 接收路由 10 + 入口 7 + 批量 3 + VOLU 4 + 日志 9 + 文件选择器启动回归 1；2026-11-06 Pixel_7 模拟器 P4 后 clean 复跑 56/56
+├── app/src/androidTest/                   # 12 个测试类、57 个 @Test：互操作 5 + 密钥/Keystore 4 + 文字动作 6 + e2e 6 + 接收路由 10 + 入口 7 + 批量 3 + VOLU 4 + 日志 9 + 文件选择器启动回归 1 + 启动/关于页 smoke 1；2026-11-06 Pixel_7 模拟器 P4 后 clean 复跑 56/56（新增 smoke 后全量未重跑）
 ├── ../shared/crypto-core/                 # 纯 JVM 加密内核（Android 通过 settings 重映射；保留桌面端包名与线格式）
 │   ├── src/main/java/crypto/volume/       # VOLU 外部卷：VolumeInfo/严格解析/有界流/分卷引擎
 │   └── src/test/

@@ -16,6 +16,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import com.cryptoassistant.app.BuildConfig
 import com.cryptoassistant.app.R
@@ -85,7 +86,7 @@ fun SettingsScreen(
     )
 
     LazyColumn(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth().testTag("settings_list"),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(
             start = Spacing.screenPadding,
             end = Spacing.screenPadding,
@@ -162,6 +163,7 @@ fun SettingsScreen(
         item {
             AppCard {
                 SettingsNavRow(
+                    modifier = Modifier.testTag("settings_about"),
                     icon = Icons.Outlined.Info,
                     title = stringResource(R.string.settings_about_title),
                     subtitle = stringResource(

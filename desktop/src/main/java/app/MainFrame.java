@@ -40,11 +40,11 @@ public class MainFrame extends JFrame {
         
         initComponents();
         
-        // 添加窗口关闭监听器，清除暂存的密码
+        // 关闭窗口只清内存缓存；便捷模式写入系统密钥链的密码要保留下次启动使用。
         addWindowListener(new java.awt.event.WindowAdapter() {
             @Override
             public void windowClosing(java.awt.event.WindowEvent e) {
-                crypto.key.PrivateKeyAccessService.clearAllPasswordCaches();
+                crypto.key.PrivateKeyAccessService.clearMemoryPasswordCaches();
             }
         });
     }

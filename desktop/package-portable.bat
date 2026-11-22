@@ -68,7 +68,13 @@ echo [1/5] Building fat jar...
 REM Record the source commit into the jar manifest (Implementation-Build), so the About
 REM page can say which commit produced this build.
 set "GIT_COMMIT=unknown"
-for /f "delims=" %%i in ('git -C "%CD%\.." rev-parse --short=9 HEAD 2^>nul') do set "GIT_COMMIT=%%i"
+set "GIT_COMMIT_FILE=%TEMP%\aegix-git-commit-%RANDOM%.txt"
+git -C "%CD%" rev-parse --short=9 HEAD > "%GIT_COMMIT_FILE%" 2>nul
+if exist "%GIT_COMMIT_FILE%" (
+    set /p GIT_COMMIT=<"%GIT_COMMIT_FILE%"
+    del "%GIT_COMMIT_FILE%" >nul 2>nul
+)
+echo [INFO] Source commit: %GIT_COMMIT%
 call "%MVN%" clean package -DskipTests "-Dgit.commit=%GIT_COMMIT%"
 if errorlevel 1 (
     echo ERROR: Maven build failed.

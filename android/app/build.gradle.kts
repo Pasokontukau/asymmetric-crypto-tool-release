@@ -45,8 +45,8 @@ android {
         applicationId = "com.cryptoassistant.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = 27
-        versionName = "1.4.1"
+        versionCode = 28
+        versionName = "1.4.2"
         // 构建 UUID（每次构建唯一）与编译时间，均只读，不落盘、不用于任何协议逻辑。
         buildConfigField("String", "BUILD_UUID", "\"$buildUuid\"")
         buildConfigField("String", "BUILD_TIME", "\"$buildTime\"")
@@ -139,4 +139,12 @@ dependencies {
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.junit)
+    // 设备端 Compose smoke：启动、设置 → 关于、检查更新开关。
+    // androidTest 配置不继承 implementation 的 BOM 约束，必须在这里再声明一次。
+    androidTestImplementation(platform(libs.androidx.compose.bom))
+    // Compose 1.11.4 仍传递 Espresso 3.5.0，它在 Android 17/API 37 调用了已删除的
+    // InputManager.getInstance()；3.7.0 改用 getSystemService，必须显式覆盖。
+    androidTestImplementation(libs.androidx.test.espresso.core)
+    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
 }

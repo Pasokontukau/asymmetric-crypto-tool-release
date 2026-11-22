@@ -57,7 +57,7 @@ public class SettingsStorage {
     private static final String KEY_TEST_MODE = "testMode"; // 测试模式：不要求密码强度
     private static final String KEY_DATA_DIR = "data.dir"; // data 目录路径
     private static final String KEY_PASSWORD_CACHE_TIMEOUT = "passwordCacheTimeout"; // 密码缓存超时（分钟）
-    private static final String KEY_SECURITY_LEVEL = "securityLevel"; // 安全级别：strict, balanced
+    private static final String KEY_SECURITY_LEVEL = "securityLevel"; // 安全级别：strict, balanced, convenient
     private static final String KEY_THREAD_POOL_SIZE = "threadPoolSize"; // 线程池大小：用于分卷处理
     private static final String KEY_VOLUME_LIMIT_PRESET = "volumeLimitPreset"; // 单个外部分卷的大小档位
     private static final String KEY_PACKAGE_MULTI_FILES = "packageMultiFiles"; // 多文件默认打包为一个加密包
@@ -329,8 +329,11 @@ public class SettingsStorage {
             level = SECURITY_LEVEL_BALANCED;
         }
 
-        // 如果切换到严格模式，需要确保清除所有缓存的密码
-        if (SECURITY_LEVEL_STRICT.equals(level) && !SECURITY_LEVEL_STRICT.equals(oldLevel)) {
+        // 切到严格模式，或离开便捷模式：都要清掉持久化的系统密钥链密码。
+        // 平衡模式不使用密钥链，继续保留旧值会让“已经关闭便捷模式”变成假象。
+        boolean leavingConvenient = SECURITY_LEVEL_CONVENIENT.equals(oldLevel)
+                && !SECURITY_LEVEL_CONVENIENT.equals(level);
+        if (SECURITY_LEVEL_STRICT.equals(level) || leavingConvenient) {
             KeychainStorage.clearAllPasswords();
             KeyPairStorage.notifyClearAllPasswordCaches();
         }

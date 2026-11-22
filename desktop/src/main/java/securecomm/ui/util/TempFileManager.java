@@ -1,13 +1,14 @@
 package securecomm.ui.util;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import core.util.FolderZipUtils;
+import core.util.TempFileRegistry;
 
 /**
  * 临时文件管理器
@@ -27,6 +28,16 @@ public class TempFileManager {
     }
 
     private TempFileManager() {
+    }
+
+    /**
+     * 在系统临时目录创建并登记一个明文 ZIP。路径在文件创建前写入崩溃清理清单，
+     * 避免进程被强制结束时只剩一个无人认领的 ZIP。
+     */
+    public static File createTempZip(String prefix) throws IOException {
+        String tempDir = System.getProperty("java.io.tmpdir");
+        return TempFileRegistry.createTempFile(prefix, ".zip",
+                new File(tempDir == null || tempDir.trim().isEmpty() ? "." : tempDir));
     }
 
     public static void registerZipFile(File file) {
@@ -109,11 +120,13 @@ public class TempFileManager {
     public static void cleanAll() {
         synchronized (tempZipFiles) {
             for (File tempFile : tempZipFiles) {
-                FolderZipUtils.safeDelete(tempFile);
+                TempFileRegistry.delete(tempFile);
             }
             tempZipFiles.clear();
             folderNames.clear();
             archiveNames.clear();
         }
+        // 解密临时文件与文件夹暂存目录也可能含有明文；同一退出钩子一起收掉。
+        TempFileRegistry.cleanAll();
     }
 }

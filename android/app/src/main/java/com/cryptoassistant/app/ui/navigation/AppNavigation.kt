@@ -32,6 +32,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -408,6 +409,7 @@ fun AppNavigation(
                     bottomDestinations.forEach { destination ->
                         val label = stringResource(destination.labelRes)
                         NavigationBarItem(
+                            modifier = Modifier.testTag("nav_${destination.route}"),
                             selected = (currentRoute ?: AppRoutes.HOME) == destination.route,
                             onClick = {
                                 AppLog.debug("nav.open", "route=${destination.route}")

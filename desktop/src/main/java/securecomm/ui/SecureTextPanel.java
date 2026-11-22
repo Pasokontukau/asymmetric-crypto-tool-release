@@ -86,8 +86,8 @@ public class SecureTextPanel extends OperationPanel {
 
     static {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            // 清理临时文件和缓存（主要通过 PrivateKeyAccessService 进行），确保 JVM 退出时清理敏感数据
-            crypto.key.PrivateKeyAccessService.clearAllPasswordCaches();
+            // 退出只清内存；便捷模式的系统密钥链密码需要跨进程保留。
+            crypto.key.PrivateKeyAccessService.clearMemoryPasswordCaches();
         }));
     }
 

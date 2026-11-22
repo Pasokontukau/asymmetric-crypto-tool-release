@@ -30,10 +30,32 @@ public class PersistencePrivacyTest {
                 ui.contains("folderName + \"_\""));
         assertTrue("文件夹加密临时 ZIP 应使用固定前缀",
                 worker.contains("\"aegix-folder-\""));
+        assertTrue("文件夹加密临时 ZIP 必须走崩溃登记器",
+                worker.contains("TempFileManager.createTempZip"));
         assertTrue("文件夹解密使用固定前缀的暂存目录",
                 service.contains("\"aegix-unzip-\""));
         assertTrue("文件夹解密先解到暂存目录再搬到目标目录",
                 service.contains("FolderZipUtils.unzipFolder(zip, staging"));
+        assertTrue("解密暂存目录必须走崩溃登记器",
+                service.contains("TempFileRegistry.createTempDirectory"));
+    }
+
+    @Test
+    public void plaintextTempsAreCleanedOnStartupAndCrash() throws IOException {
+        String app = source("src/main/java/app/AppMain.java");
+        String service = source("src/main/java/securecomm/service/FileDecryptService.java");
+        String worker = source("src/main/java/securecomm/ui/worker/EncryptFilesWorker.java");
+
+        assertTrue("启动时必须清理上次崩溃留下的临时文件",
+                app.contains("TempFileRegistry.cleanupStale()"));
+        assertTrue("解密临时文件创建前必须登记",
+                service.contains("TempFileRegistry.createTempFile(\"aegix-decrypt-\""));
+        assertTrue("单卷解密临时文件创建前必须登记",
+                service.contains("TempFileRegistry.createTempFile(\"volu-decrypt-\""));
+        assertTrue("批量打包临时 ZIP 必须走崩溃登记器",
+                worker.contains("TempFileManager.createTempZip(\"aegix-archive-\""));
+        assertFalse("解密临时文件不能再绕过登记器直接创建",
+                service.contains("File.createTempFile(\"aegix-decrypt-"));
     }
 
     @Test

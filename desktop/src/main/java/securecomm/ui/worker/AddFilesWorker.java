@@ -3,6 +3,7 @@ package securecomm.ui.worker;
 import core.util.FileOperationErrors;
 import core.util.FolderZipUtils;
 import core.util.LogManager;
+import core.util.TempFileRegistry;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -71,8 +72,7 @@ public class AddFilesWorker extends SwingWorker<List<Object>, Object[]> {
             publish(new Object[]{"start_folder", folderName, finalCurrentFileIndex, finalTotalFiles});
             File tempZipFile = null;
             try {
-                String tempDir = System.getProperty("java.io.tmpdir");
-                tempZipFile = File.createTempFile("aegix-folder-", ".zip", new File(tempDir));
+                tempZipFile = TempFileManager.createTempZip("aegix-folder-");
                 tempZipFile.deleteOnExit();
                 FolderZipUtils.zipFolder(folder, tempZipFile, (current, total, item) -> {
                     int folderProgress = (total > 0) ? (current * 100 / total) : 0;
@@ -88,7 +88,7 @@ public class AddFilesWorker extends SwingWorker<List<Object>, Object[]> {
                         finalCurrentFileIndex * 100 / finalTotalFiles});
             } catch (Exception e) {
                 if (tempZipFile != null) {
-                    FolderZipUtils.safeDelete(tempZipFile);
+                    TempFileRegistry.delete(tempZipFile);
                 }
                 LogManager.error("add-folder failed", e);
                 publish(new Object[]{"error", folder.getName(), FileOperationErrors.userMessage(e)});

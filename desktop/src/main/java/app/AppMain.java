@@ -9,6 +9,7 @@ import com.formdev.flatlaf.FlatLightLaf;
 import core.storage.AppPaths;
 import core.storage.StorageManager;
 import core.util.LogManager;
+import core.util.TempFileRegistry;
 import java.awt.Component;
 import java.awt.Font;
 import java.util.List;
@@ -25,6 +26,7 @@ public class AppMain {
         // 该目录不可写时会让 JNA 抛 UnsatisfiedLinkError、DPAPI 不可用。
         String requestedTempDir = System.getProperty("java.io.tmpdir");
         AppPaths.ensureWritableTempDir();
+        int staleTempFiles = TempFileRegistry.cleanupStale();
 
         optimizeDpiDisplay();
         
@@ -32,6 +34,9 @@ public class AppMain {
         LogManager.info("应用程序启动，初始化日志系统");
         if (requestedTempDir != null && !requestedTempDir.equals(System.getProperty("java.io.tmpdir"))) {
             LogManager.info("系统临时目录不可写，已改用应用临时目录");
+        }
+        if (staleTempFiles > 0) {
+            LogManager.info("已清理上次运行残留的临时文件: " + staleTempFiles);
         }
         
         SettingsManager.init();

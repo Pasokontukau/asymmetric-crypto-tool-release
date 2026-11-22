@@ -48,11 +48,10 @@ public class PrivateKeyAccessService {
     /** 内存密码缓存：keyPairName → (password, timestamp)。 balanced / convenient 模式下使用。 */
     private static final Map<String, CachedPassword> passwordMemoryCache = new ConcurrentHashMap<>();
 
-    /** balanced 模式下的内存缓存寿命（毫秒）：3 分钟。 */
-    private static final long BALANCED_CACHE_TTL_MS = 3L * 60 * 1000;
+    /** 设置页缺省的内存缓存寿命（毫秒）：30 分钟；实际值由 SettingsStorage 配置。 */
+    private static final long DEFAULT_CACHE_TTL_MS = 30L * 60 * 1000;
 
-    /** convenient 模式下的内存缓存寿命（毫秒）：10 分钟。 */
-    private static final long CONVENIENT_CACHE_TTL_MS = 10L * 60 * 1000;
+    private static final long MILLIS_PER_MINUTE = 60L * 1000;
 
     /** 缓存记录（密码 char[] + 记录时间戳）。 */
     private static class CachedPassword {
@@ -77,8 +76,8 @@ public class PrivateKeyAccessService {
 
     static {
         // 监听安全等级变更。当切换到 strict 模式时清除所有内存缓存。
-        SettingsStorage.addSecurityLevelChangeListener((oldLevel, newLevel) -> {
-            if ("strict".equalsIgnoreCase(newLevel)) {
+        SettingsStorage.addSecurityLevelChangeListener((newLevel, ignoredOldLevel) -> {
+            if (SettingsStorage.SECURITY_LEVEL_STRICT.equals(newLevel)) {
                 clearAllPasswordCaches();
             }
         });
@@ -145,7 +144,6 @@ public class PrivateKeyAccessService {
                 boolean verified = KeyPairManager.verifyPassword(encryptedPrivateKey, password);
                 if (!verified) {
                     showErrorMessage("密码错误", "为密钥对 \"" + keyPairName + "\" 输入的密码不正确。\n\n请检查键盘输入（注意 Caps Lock 状态）。");
-                    MemorySecurityUtils.clearCharArray(password);
                     return null;
                 }
 
@@ -153,25 +151,27 @@ public class PrivateKeyAccessService {
                 byte[] plainPrivateKey = KeyPairManager.decryptPrivateKey(encryptedPrivateKey, password);
                 if (plainPrivateKey == null) {
                     showErrorMessage("解密失败", "私钥字节解密返回空。请检查加密文件是否完整。");
-                    MemorySecurityUtils.clearCharArray(password);
                     return null;
                 }
 
-                // 根据安全等级决定是否缓存密码。
-                cachePasswordIfApplicable(password, keyPairName, level);
+                try {
+                    // 解析为 Java Security PrivateKey 对象。
+                    PrivateKey privateKey = KeyUtils.getPrivateKeyFromBytes(plainPrivateKey);
 
-                // 解析为 Java Security PrivateKey 对象。
-                PrivateKey privateKey = KeyUtils.getPrivateKeyFromBytes(plainPrivateKey);
-
-                // 立即清除明文字节数组（PrivateKey 对象由 JCA 管理，独立于字节数组）。
-                MemorySecurityUtils.clearByteArray(plainPrivateKey);
-
-                return privateKey;
+                    // 只有完整成功后才缓存；失败的操作不应留下密码。
+                    cachePasswordIfApplicable(password, keyPairName, level);
+                    return privateKey;
+                } finally {
+                    // PrivateKey 对象由 JCA 管理，独立于明文字节数组。
+                    MemorySecurityUtils.clearByteArray(plainPrivateKey);
+                }
 
             } catch (Exception e) {
                 showErrorMessage("解密失败", "私钥解密过程中出现错误：\n" + e.getMessage());
-                MemorySecurityUtils.clearCharArray(password);
                 return null;
+            } finally {
+                // 调用方拿到的私钥对象不依赖这个密码数组；缓存保存的是 clone。
+                MemorySecurityUtils.clearCharArray(password);
             }
 
         } finally {
@@ -290,17 +290,24 @@ public class PrivateKeyAccessService {
     }
 
     /**
-     * 清除所有内存密码缓存和系统密钥链中的所有密码（但不删除密钥对文件）。
-     * 当切换到 strict 安全等级、退出应用、或用户手动点击"清除全部缓存"时调用。
+     * 只清除进程内的内存密码缓存，保留便捷模式写入系统密钥链的密码。
+     * 正常退出应用时使用：退出后内存必然消失，但便捷模式的密码需要跨进程保留。
      */
-    public static void clearAllPasswordCaches() {
-        // 1. 清除所有内存缓存（先覆写再移除，防止数据残留）
+    public static void clearMemoryPasswordCaches() {
         for (CachedPassword entry : passwordMemoryCache.values()) {
             entry.clear();
         }
         passwordMemoryCache.clear();
+    }
 
-        // 2. 清除系统密钥链
+    /**
+     * 清除所有内存密码缓存和系统密钥链中的所有密码（但不删除密钥对文件）。
+     * 当切换到 strict 安全等级、离开便捷模式、删除密钥对或用户手动清除时调用。
+     */
+    public static void clearAllPasswordCaches() {
+        clearMemoryPasswordCaches();
+
+        // 清除系统密钥链
         try {
             KeychainStorage.clearAllPasswords();
         } catch (Exception ignored) {
@@ -342,7 +349,10 @@ public class PrivateKeyAccessService {
 
         String level = SettingsStorage.getSecurityLevel();
         char[] password = getPasswordFor(keyPairName, level);
-        if (password == null) return null;
+        if (password == null) {
+            MemorySecurityUtils.clearByteArray(encryptedSalt);
+            return null;
+        }
 
         try {
             byte[] plainSalt = KeyPairManager.decryptPrivateKey(encryptedSalt, password);
@@ -350,11 +360,14 @@ public class PrivateKeyAccessService {
                 showErrorMessage("解密失败", "salt 解密返回空（密码可能不正确或文件已损坏）。");
                 return null;
             }
+            // 与 getPrivateKey 共用同一套缓存策略；否则第一次导出 salt 后仍会再次弹框。
+            cachePasswordIfApplicable(password, keyPairName, level);
             return plainSalt;
         } catch (Exception e) {
             showErrorMessage("解密失败", "salt 解密过程中出现错误：\n" + e.getMessage());
             return null;
         } finally {
+            MemorySecurityUtils.clearCharArray(password);
             MemorySecurityUtils.clearByteArray(encryptedSalt);
         }
     }
@@ -463,8 +476,8 @@ public class PrivateKeyAccessService {
      * 按安全等级获取密码。
      *
      * strict     → 每次弹框，不读任何缓存
-     * balanced   → 先看内存缓存（3 分钟有效），没有才弹框，弹框成功后写内存缓存
-     * convenient → ①先看系统密钥链（DPAPI）；②再看内存缓存（10 分钟有效）；③都没有才弹框，弹框成功后同时写密钥链和内存缓存
+     * balanced   → 先看内存缓存（按设置页超时），没有才弹框，弹框成功后写内存缓存
+     * convenient → ①先看系统密钥链（DPAPI）；②再看内存缓存（按设置页超时）；③都没有才弹框，弹框成功后同时写密钥链和内存缓存
      *
      * @return 用户输入的密码 char[]（新数组，调用方负责清理）。用户取消弹框或读取失败时返回 null。
      */
@@ -477,7 +490,7 @@ public class PrivateKeyAccessService {
                 return showPasswordDialog(keyPairName);
 
             case "convenient": {
-                long ttlMs = CONVENIENT_CACHE_TTL_MS;
+                long ttlMs = configuredCacheTtlMillis();
 
                 // ① 先试系统密钥链（DPAPI 保护，跨进程持久化）
                 char[] fromKeychain = readFromSystemKeychain(keyPairName);
@@ -499,7 +512,7 @@ public class PrivateKeyAccessService {
 
             case "balanced":
             default: {
-                long ttlMs = BALANCED_CACHE_TTL_MS;
+                long ttlMs = configuredCacheTtlMillis();
 
                 // balanced：先看内存缓存，没有才弹框。弹框成功后写内存缓存。
                 char[] cached = readFromMemoryCache(keyPairName, ttlMs);
@@ -511,6 +524,21 @@ public class PrivateKeyAccessService {
                 return showPasswordDialog(keyPairName);
             }
         }
+    }
+
+    /** 把设置页的分钟数转换为缓存 TTL；-1 表示本次进程内永不过期。 */
+    static long cacheTtlMillis(int minutes) {
+        if (minutes == SettingsStorage.TIMEOUT_NEVER) {
+            return Long.MAX_VALUE;
+        }
+        if (minutes <= 0) {
+            return DEFAULT_CACHE_TTL_MS;
+        }
+        return minutes * MILLIS_PER_MINUTE;
+    }
+
+    private static long configuredCacheTtlMillis() {
+        return cacheTtlMillis(SettingsStorage.getPasswordCacheTimeout());
     }
 
     /** 从内存缓存读取密码。返回的是密码的 clone，调用方负责清理。 */

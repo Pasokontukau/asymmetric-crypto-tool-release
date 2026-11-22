@@ -842,6 +842,12 @@ h2 {
   line-height: 1.72;
 }
 
+.security-more {
+  margin: 18px 0 0;
+  font-size: 0.8rem;
+  line-height: 1.8;
+}
+
 .limits {
   display: grid;
   grid-template-columns: minmax(170px, 218px) minmax(0, 1fr) auto;

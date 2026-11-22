@@ -521,7 +521,7 @@ public class SettingsPanel extends JPanel {
             securityLevelComboBox.setSelectedIndex(1); // 默认平衡模式
         }
 
-        // 超时设置组件（仅在平衡模式下显示）
+        // 超时设置组件（严格模式隐藏；平衡/便捷模式都会用它控制内存缓存）
         String[] timeoutOptions = {
             "5 分钟",
             "15 分钟",
@@ -554,7 +554,7 @@ public class SettingsPanel extends JPanel {
         JPanel timeoutContentPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
         timeoutContentPanel.setBackground(app.theme.ThemeManager.getPanelBackgroundColor());
         
-        JLabel timeoutSectionLabel = new JLabel("密码缓存超时");
+        JLabel timeoutSectionLabel = new JLabel("内存密码缓存超时");
         timeoutSectionLabel.setFont(app.theme.AppFonts.getBoldFont());
         timeoutSectionLabel.setForeground(app.theme.ThemeManager.getTextColor());
         timeoutContentPanel.add(timeoutSectionLabel);
@@ -629,7 +629,7 @@ public class SettingsPanel extends JPanel {
         gbc.gridy++;
         gbc.gridwidth = 3;
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        JLabel securityLevelInfo = new JLabel("<html>• <b>严格模式</b>：每次加密/解密操作都需要重新输入密码<br>• <b>平衡模式</b>：同一密钥在会话内缓存，超时后清除<br>• <b>便捷模式</b>：密码保存到系统密钥链，重启后无需重新输入</html>");
+        JLabel securityLevelInfo = new JLabel("<html>• <b>严格模式</b>：每次加密/解密操作都需要重新输入密码<br>• <b>平衡模式</b>：同一密钥在内存中缓存，达到超时后清除<br>• <b>便捷模式</b>：密码保存到系统密钥链，重启后无需重新输入；切换到其他模式会清除</html>");
         securityLevelInfo.setFont(app.theme.AppFonts.getSmallFont());
         securityLevelInfo.setForeground(app.theme.ThemeManager.getSecondaryTextColor());
         mainPanel.add(securityLevelInfo, gbc);
@@ -647,8 +647,8 @@ public class SettingsPanel extends JPanel {
         gbc.gridwidth = 3;
         mainPanel.add(timeoutPanel, gbc);
 
-        // 初始化超时设置可见性
-        timeoutPanel.setVisible(settings.storage.SettingsStorage.SECURITY_LEVEL_BALANCED.equals(currentLevel));
+        // 初始化超时设置可见性：严格模式没有缓存，平衡/便捷模式都有内存缓存。
+        timeoutPanel.setVisible(!settings.storage.SettingsStorage.SECURITY_LEVEL_STRICT.equals(currentLevel));
 
         securitySettingsPanel.add(mainPanel, BorderLayout.NORTH);
 

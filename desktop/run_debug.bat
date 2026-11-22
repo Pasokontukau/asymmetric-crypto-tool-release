@@ -12,7 +12,7 @@ REM Check if app.jar exists
 if not exist "app.jar" (
     echo [ERROR] app.jar not found!
     echo.
-    echo Please run build.bat and then create_fat_jar.bat first
+    echo Please run build.bat (or start-desktop.bat build) first
     echo.
     pause
     exit /b 1

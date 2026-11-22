@@ -73,7 +73,7 @@ if errorlevel 1 (
 ) else (
     echo   [PASS]  All tools are ready
     echo.
-    echo   You can now run build.bat or create_fat_jar.bat
+    echo   You can now run build.bat (or start-desktop.bat build)
 )
 echo.
 pause

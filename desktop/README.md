@@ -28,9 +28,9 @@ Java 17 + Swing 的桌面程序，Maven 构建。自 **2026-11-05** 起重新启
 
 ```bat
 :: 仓库根的一键启动（推荐）
-..\start-desktop.bat        :: 有 app.jar 直接启动，否则先构建
+..\start-desktop.bat        :: app.jar 不存在或比源码旧则先构建，再启动
 ..\start-desktop.bat build  :: 强制重建后启动
-..\start-desktop.bat run    :: 只启动现有产物
+..\start-desktop.bat run    :: 只启动现有产物，不检查新旧
 
 cd desktop
 build.bat     :: mvn clean package -DskipTests，成功后把 fat jar 复制为 app.jar
@@ -137,7 +137,7 @@ JNA/DPAPI 会假失败（[踩坑 P-31](../docs/agent/pitfalls.md)）。脚本已
 
 > **2026-11-06 启动修复**：`AppMain` 曾设置 `sun.font.fontmanager=sun.font.SunFontManager`
 > （抽象类），FlatLaf 初始化时 `FontManagerFactory` 会抛 `InstantiationException`，应用直接退出。
-> 已移除该覆盖，JDK 8/17 均可启动；排查记录见 [pitfalls P-25](../docs/agent/pitfalls.md)。
+> 已移除该覆盖；当时 JDK 8/17 均可启动。2026-11-09 起桌面改用 Java 17 字节码，当前产物必须用 JDK 17 运行。排查记录见 [pitfalls P-25](../docs/agent/pitfalls.md)。
 >
 > **控制台编码（2026-11-12 起统一 UTF-8）**：批处理用 `chcp 65001`，JVM 以
 > `-Dfile.encoding=UTF-8` 启动（含 jpackage 生成的启动器），日志由 `LogManager` 显式按 UTF-8 写。

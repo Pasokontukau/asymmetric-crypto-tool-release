@@ -11,7 +11,7 @@
     <version>${revision}</version>
 
     <properties>
-        <revision>1.4.1</revision>
+        <revision>1.4.2</revision>
         <!-- 桌面端运行在随包 JDK 17 上，不再承诺 Java 8 运行。 -->
         <maven.compiler.release>17</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

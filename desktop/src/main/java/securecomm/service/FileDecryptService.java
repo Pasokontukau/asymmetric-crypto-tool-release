@@ -1,6 +1,7 @@
 package securecomm.service;
 
 import core.util.FolderZipUtils;
+import core.util.TempFileRegistry;
 import crypto.file.FileCryptoEngine;
 import crypto.file.FileDecryptResult;
 import crypto.file.FileProgressListener;
@@ -190,7 +191,7 @@ public final class FileDecryptService {
             FileProgressListener listener,
             AtomicBoolean cancelled
     ) throws Exception {
-        File temporary = File.createTempFile("aegix-decrypt-", ".tmp", outputDirectory);
+        File temporary = TempFileRegistry.createTempFile("aegix-decrypt-", ".tmp", outputDirectory);
         boolean success = false;
         try {
             FileDecryptResult result;
@@ -213,7 +214,7 @@ public final class FileDecryptService {
                         temporary,
                         outputDirectory,
                         stripSuffix(originalName, ".folder"));
-                FolderZipUtils.safeDelete(temporary);
+                TempFileRegistry.delete(temporary);
                 success = true;
                 return new Result(
                         folder,
@@ -243,7 +244,9 @@ public final class FileDecryptService {
                     null);
         } finally {
             if (!success) {
-                FolderZipUtils.safeDelete(temporary);
+                TempFileRegistry.delete(temporary);
+            } else {
+                TempFileRegistry.untrack(temporary);
             }
         }
     }
@@ -266,7 +269,7 @@ public final class FileDecryptService {
             throw new ExternalPartsException(info.getPartIndex(), info.getPartCount());
         }
 
-        File temporary = File.createTempFile("volu-decrypt-", ".tmp", outputDirectory);
+        File temporary = TempFileRegistry.createTempFile("volu-decrypt-", ".tmp", outputDirectory);
         boolean success = false;
         try {
             VolumeDecryptResult result;
@@ -305,7 +308,9 @@ public final class FileDecryptService {
                     info.getSha256Hash());
         } finally {
             if (!success) {
-                FolderZipUtils.safeDelete(temporary);
+                TempFileRegistry.delete(temporary);
+            } else {
+                TempFileRegistry.untrack(temporary);
             }
         }
     }
@@ -323,8 +328,7 @@ public final class FileDecryptService {
             File outputDirectory,
             String requestedName
     ) throws Exception {
-        File staging = Files.createTempDirectory(
-                outputDirectory.toPath(), "aegix-unzip-").toFile();
+        File staging = TempFileRegistry.createTempDirectory("aegix-unzip-", outputDirectory);
         File target = null;
         try {
             FolderZipUtils.unzipFolder(zip, staging, null);
@@ -349,7 +353,7 @@ public final class FileDecryptService {
             }
             throw error;
         } finally {
-            FolderZipUtils.safeDelete(staging);
+            TempFileRegistry.delete(staging);
         }
     }
 

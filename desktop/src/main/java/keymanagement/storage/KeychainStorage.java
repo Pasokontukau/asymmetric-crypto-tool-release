@@ -59,6 +59,8 @@ public class KeychainStorage {
             // Base64 编码后存储到 Preferences
             String encoded = java.util.Base64.getEncoder().encodeToString(encrypted);
             PREFS.put(KEY_PREFIX + keyName, encoded);
+            // 立即落盘，避免进程退出时 Preferences 尚未同步导致下次启动读不到。
+            PREFS.flush();
             
             LogManager.info("密码已保存到Windows密钥链: " + keyName);
         } catch (Exception e) {

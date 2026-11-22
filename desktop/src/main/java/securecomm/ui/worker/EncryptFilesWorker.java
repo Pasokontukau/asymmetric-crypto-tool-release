@@ -4,6 +4,7 @@ import core.model.FileInfo;
 import core.util.FileOperationErrors;
 import core.util.FolderZipUtils;
 import core.util.LogManager;
+import core.util.TempFileRegistry;
 import crypto.file.FileCryptoEngine;
 import crypto.key.PrivateKeyAccessService;
 import java.io.BufferedInputStream;
@@ -114,10 +115,7 @@ public class EncryptFilesWorker extends SwingWorker<List<FileInfo>, SecureTextPr
                     members.add(file);
                 }
                 if (members.size() >= 2) {
-                    File tempZip = File.createTempFile(
-                            "aegix-archive-",
-                            ".zip",
-                            new File(System.getProperty("java.io.tmpdir")));
+                    File tempZip = TempFileManager.createTempZip("aegix-archive-");
                     tempZip.deleteOnExit();
                     packagedZip = tempZip;
                     publish(new SecureTextProgressUpdate(10, "正在打包多个文件..."));
@@ -289,7 +287,7 @@ public class EncryptFilesWorker extends SwingWorker<List<FileInfo>, SecureTextPr
         } finally {
             if (packagedZip != null) {
                 TempFileManager.unregisterZipFile(packagedZip);
-                FolderZipUtils.safeDelete(packagedZip);
+                TempFileRegistry.delete(packagedZip);
             }
         }
     }

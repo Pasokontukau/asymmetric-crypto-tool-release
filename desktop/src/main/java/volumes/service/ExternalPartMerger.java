@@ -6,6 +6,7 @@ import crypto.volume.VolumeCryptoEngine;
 import crypto.volume.VolumeDecryptResult;
 import crypto.volume.VolumeFormatException;
 import crypto.volume.VolumeInfo;
+import core.util.TempFileRegistry;
 import crypto.volume.VolumeSetPlan;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -353,19 +354,23 @@ public final class ExternalPartMerger {
                     "分卷数量与元数据不一致: " + ordered.size() + " vs " + partCount);
         }
 
-        File temporary = File.createTempFile(
+        File temporary = TempFileRegistry.createTempFile(
                 "external-merge-",
                 sourceIsArchive ? ".zip.tmp" : ".part.tmp",
                 outputDirectory);
         if (temporaryName != null && !temporaryName.trim().isEmpty()) {
             File named = new File(outputDirectory, temporaryName);
             if (named.isFile() && !named.delete()) {
-                temporary.delete();
+                TempFileRegistry.delete(temporary);
                 throw new IOException("无法删除旧临时文件: " + named);
             }
-            if (temporary.renameTo(named)) {
-                temporary = named;
+            try {
+                TempFileRegistry.moveTracked(temporary, named);
+            } catch (Exception error) {
+                TempFileRegistry.delete(temporary);
+                throw error;
             }
+            temporary = named;
         }
 
         MessageDigest digest = MessageDigest.getInstance("SHA-256");
@@ -478,7 +483,9 @@ public final class ExternalPartMerger {
             throw new ExternalMergeException("分卷解密失败: " + error.getMessage(), error);
         } finally {
             if (!success) {
-                temporary.delete();
+                TempFileRegistry.delete(temporary);
+            } else {
+                TempFileRegistry.untrack(temporary);
             }
         }
     }
