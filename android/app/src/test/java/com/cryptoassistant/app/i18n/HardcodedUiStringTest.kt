@@ -10,8 +10,9 @@ import org.junit.Test
  * <p>G0 基线 145 条；G1 设置壳降到 128；G2 主流程降到 44；G3 悬浮球/胶囊/引导/悬浮球设置
  * 降到 6；G4 工具书外壳迁完后为 0。任何新增 UI 硬编码都会让数字变大并失败。</p>
  *
- * <p>只扫描 UI 常见形态：`Text("中文")`、`contentDescription = "中文"`、
- * `Toast.makeText(..., "中文")`。工具书正文是内容数据，不在此扫描；注释与日志不在范围。</p>
+ * <p>扫描 UI 常见形态：`Text("中文")`、`text = "中文"`、`contentDescription = "中文"`、
+ * `Toast.makeText(..., "中文")`，以及 `SectionTitle("中文")`/`InfoBullet("中文")`/`StatusPill("中文")`
+ * 这类包装组件。工具书正文是内容数据，不在此扫描；注释与日志不在范围。</p>
  */
 class HardcodedUiStringTest {
 
@@ -22,8 +23,10 @@ class HardcodedUiStringTest {
 
     private val patterns = listOf(
         Regex("""Text\(\s*"[^"]*\p{IsHan}"""),
+        Regex("""text\s*=\s*"[^"]*\p{IsHan}"""),
         Regex("""contentDescription\s*=\s*"[^"]*\p{IsHan}"""),
         Regex("""Toast\.makeText\([^\n]*"[^"]*\p{IsHan}"""),
+        Regex("""(SectionTitle|InfoBullet|StatusPill)\(\s*"[^"]*\p{IsHan}"""),
     )
 
     private fun uiSourceRoot(): File {

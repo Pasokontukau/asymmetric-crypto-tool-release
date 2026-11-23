@@ -161,14 +161,14 @@ monorepo 的内核源码在 `..\shared\crypto-core`，Gradle 根在 `..\android`
 
 构建产物 `target/`、`app.jar`、`bin/`、`lib/` 都是本地产物，已在 `.gitignore` 中，不要提交。
 
-## 分卷合并
+## 接收外部加密分卷
 
-主窗口的「分卷合并」标签页用于接收 Android 生成的外部加密分卷：
+桌面没有独立的「分卷合并」标签页（该页已于 2026-11-12 删除）；多卷包统一走「安全通信」文件页的批量解密：
 
 1. 选择接收方密钥对（会按安全等级提示密码）；
-2. 添加同一套 `.aegix` 分卷（如 `_vol001.aegix`、`_vol002.aegix`）；
-3. 点“检查分卷”，确认齐套；缺卷/混包/重卷会直接说明原因；
-4. 点“合并还原”，按元数据输出原文件（单文件分卷）或 ZIP（文件夹/多文件分卷）到默认输出目录或手选的目录。
+2. 在文件页添加同一套 `.aegix` 分卷（如 `_vol001.aegix`、`_vol002.aegix`）；
+3. 文件页会先检查齐套；缺卷/混包/重卷会直接说明原因；
+4. 齐套后按元数据输出原文件（单文件分卷）或 ZIP（文件夹/多文件分卷）到默认输出目录或手选的目录。
 
 检查只读取每卷 VOLU 元数据；合并过程中可取消，失败或取消不会留下半成品 ZIP。
 真实 Swing 手工矩阵已跑 **24/24**（2/3 卷、缺卷、重卷、混包、中途取消、只读输出目录）；
@@ -185,7 +185,7 @@ monorepo 的内核源码在 `..\shared\crypto-core`，Gradle 根在 `..\android`
 - 同一页的“多个文件默认打包为一个加密包”默认开启；文件页会按此预选，本次仍可取消。只对 2 个及以上普通文件生效，文件夹仍各自打包；
 - 开始加密前会显示“将生成 N 卷”；多文件打包的卷数是保守估算，预计超过 20 卷时提示增大分卷大小或减少文件；
 - 输出名为 `secure_file_<ts>_<setCode>_volNNN.aegix`；每卷 ≤ 2 GB、最多 99 卷；
-- 接收方需在「分卷合并」页选齐全部卷，再合并还原；
+- 接收方需在文件页的批量解密里选齐全部卷，再合并还原；
 - Swing 手工点选与四条异常路径已实测；真实超大文件仍未实测，自动化覆盖小体积切片、合并回读与预览卷数一致。
 
 ## 文件页解密
@@ -194,7 +194,7 @@ monorepo 的内核源码在 `..\shared\crypto-core`，Gradle 根在 `..\android`
 
 - 单文件 `.aegix` 走 `crypto.file.FileCryptoEngine`；
 - 当前外部分卷（VOLU）走 `crypto.volume.VolumeCryptoEngine`；单卷外部包输出 ZIP，不自动解包；
-- 多卷外部包不能单独解密，文件页会提示去「分卷合并」页处理整组；
+- 多卷外部包不能单独解密，文件页会提示整组一起批量解密；
 - 输出先写临时文件，失败或取消不会留下半成品。
 
 `build.bat` 检测到 `JAVA_HOME` 仍是 JDK 8 时会自动改用 `%USERPROFILE%\.jdks\corretto-17`；
@@ -209,7 +209,7 @@ monorepo 的内核源码在 `..\shared\crypto-core`，Gradle 根在 `..\android`
 | `src/main/java/crypto/key/` | 桌面平台密钥访问（`PrivateKeyAccessService`）；加解密内核在 `shared/crypto-core`，以固定版本 artifact 引入 |
 | `src/main/java/securecomm/`、`contacts/`、`history/`、`keymanagement/`、`settings/` | 各功能面板与其存储 |
 | `src/main/java/platform/windows/` | DPAPI 本地密钥保护 |
-| `src/main/java/stegano/`、`volumes/` | 隐写与分卷容器；`volumes/ui/` 是「分卷合并」页 |
+| `src/main/java/stegano/`、`volumes/` | 隐写与分卷容器；独立「分卷合并」页已删除，合并入口在文件页批量解密 |
 | `src/main/resources/messages.properties` | 中文资源；`Messages` 从 classpath 按 UTF-8 加载 `/messages*.properties` |
 | `packaging/` | exe4j 工程与图标（旧打包方式，不参与 Maven 构建） |
 | `legacy/` | 旧的手工 fat-jar 流程，仅在复现历史构建时使用 |
@@ -225,13 +225,13 @@ monorepo 的内核源码在 `..\shared\crypto-core`，Gradle 根在 `..\android`
 
 ## 已知限制
 
-- 已有内核回归测试（`SharedCoreInteropTest`）与外部卷合并测试（`ExternalPartMergerTest`）：文字、单文件、当前外部分卷夹具、GCM1 私钥，以及齐套/缺卷/混包/重卷/篡改/取消（含中途）/单卷；旧 VOLU 样本已删除，旧格式不再作为可读路径。另有「分卷合并」页的完整/缺卷/混包/取消文案测试；`mvn test` 会运行。
+- 已有内核回归测试（`SharedCoreInteropTest`）与外部卷合并测试（`ExternalPartMergerTest`）：文字、单文件、当前外部分卷夹具、GCM1 私钥，以及齐套/缺卷/混包/重卷/篡改/取消（含中途）/单卷；旧 VOLU 样本已删除，旧格式不再作为可读路径。另有分卷提示文案（完整/缺卷/混包/取消）测试；`mvn test` 会运行。
 - 桌面 Maven 依赖 `com.cryptoassistant:crypto-core:${crypto-core.version}:desktop`，不再复制源码；内核自带可移植的 no-op `LogManager`/`OperationMonitor` 默认类，`desktop` classifier 会排除它们，桌面自己的实现负责真实日志与监控。版本号在 `pom.xml` 与 `shared/crypto-core/build.gradle.kts` 两处同步。
 - 本地构建依赖 `publishToMavenLocal`；新机器或 CI 必须先发布内核，或改为配置远端 Maven 仓库。D-C 修正了共享内核 P4 的 1-based 卷号不一致，属于 Android 自身 bug，不是为桌面改线格式。
 - 不迁移旧版本数据目录：便携包首次运行会在程序目录旁新建 `data/`；按既定方向不背旧数据兼容。旧 exe4j 流程仍留在 `packaging/`，但不再作为分发方式。
-- 阶段 2 已产出 `jlink`/`jpackage` 便携 ZIP；中文路径、非管理员、设置文件持久化、只读程序目录回退与设置页重启已在本机验过；**无 Java 干净机验证已暂缓（2026-11-10）**；安装器已于 2026-11-11 产出（`package-installer.bat`），未在本机实际执行安装，见[便携包规划](../docs/desktop/桌面端便携包与运行时规划.md) §15.6–§15.9。
+- 阶段 2 已产出 `jlink`/`jpackage` 便携 ZIP；中文路径、非管理员、设置文件持久化、只读程序目录回退与设置页重启已在本机验过；**无 Java 干净机验证已暂缓（2026-11-10）**；安装器已于 2026-11-11 产出（`package-installer.bat`），并已实际安装（2026-11-12 另一台电脑、2026-11-22 本机复核安装/覆盖/卸载），见[便携包规划](../docs/desktop/桌面端便携包与运行时规划.md) §15.6–§15.9。
 - 常规设置已改为 `config/settings.properties`，启动与改设置不再写注册表；`KeychainStorage` 的密码缓存仍使用 `java.util.prefs.Preferences`（DPAPI 加密），本次未迁移。只读程序目录 + `TEMP` 指向不可写位置时，JNA/FlatLaf 原生库临时解压曾报 `AccessDenied`；已于 2026-11-11 修复并复验（§15.8）。
-- 文字、单文件、单卷 VOLU 与 GCM1 私钥已与 Android 同布局；外部加密分卷的**内核合并**（`ExternalPartMerger`）与**「分卷合并」Swing 入口**均已实现，缺卷/混包/重卷/取消会提示并清理临时文件。真实 Swing 手工矩阵 **24/24**，真实 Swing 点选与真实密码框另于 2026-11-10 验过（8/8）；路径过长、磁盘不足、输出目录只读与文件占用于 2026-11-11 验过（见 `verify-error-paths.bat`）；真实超大文件仍未实测。
+- 文字、单文件、单卷 VOLU 与 GCM1 私钥已与 Android 同布局；外部加密分卷的**内核合并**（`ExternalPartMerger`）与**文件页批量解密入口**均已实现，缺卷/混包/重卷/取消会提示并清理临时文件。真实 Swing 手工矩阵 **24/24**，真实 Swing 点选与真实密码框另于 2026-11-10 验过（8/8）；路径过长、磁盘不足、输出目录只读与文件占用于 2026-11-11 验过（见 `verify-error-paths.bat`）；真实超大文件仍未实测。
 - 单文件 `.aegix` 与当前单卷/多卷外部包已在文件页接入共享内核（`FileDecryptService`），服务层测试覆盖；真实 Swing 点选已于 2026-11-10 验过。旧 `VolumeManager`、旧 VOLU 模型与旧分卷写入已删除；桌面已对超过当前分卷大小的文件写当前外部分卷；分卷大小可在「设置 → 文件处理」选五档（默认 500 MB）。
 - 仓库根 `jdk-25/` 已于 2026-11-05 删除；构建统一使用 JDK 17。
 
@@ -239,6 +239,6 @@ monorepo 的内核源码在 `..\shared\crypto-core`，Gradle 根在 `..\android`
 
 - 加密内核与线格式：[`docs/desktop/protocol.md`](../docs/desktop/protocol.md)
 - 桌面端对齐 Android 的范围与阶段：[`docs/desktop/桌面端对齐安卓端规划.md`](../docs/desktop/桌面端对齐安卓端规划.md)
-- 桌面端解耦批次计划（规划稿，未开工）：[`docs/desktop/桌面端解耦批次计划.md`](../docs/desktop/桌面端解耦批次计划.md)
+- 桌面端解耦批次计划（DR-1…DR-4 已完成，剩所有者手点项）：[`docs/desktop/桌面端解耦批次计划.md`](../docs/desktop/桌面端解耦批次计划.md)
 - 历史计划与设计：[`docs/archive/desktop/`](../docs/archive/desktop/)
 - 重启桌面端的路线与决策：[`docs/repo-publication-plan.md`](../docs/repo-publication-plan.md)
