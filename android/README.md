@@ -53,7 +53,7 @@
   - 悬浮窗权限被撤销时自动停止服务并移除窗口；回到应用后状态显示为「已暂停」。
 - `crypto-core`（纯 JVM 库，无 Android 依赖）：保留桌面端包名与公共 API，迁移 RSA-OAEP、
   AES-256-GCM、`SecureMessage`、`SignedAndEncryptedData`、签名与 GCM1 私钥文件格式。
-- 双向互操作测试：桌面端 bridge 编译为测试夹具生成器；`crypto-core` JVM 有完整单测（当前计数见[现状报告](../docs/android/项目现状报告与交接指南.md)）。设备侧有两个不同时间点的历史口径：第十一轮记录 **50/50**（当时 e2e 5、入口 filter 4）；当前源码为 **56 个 instrumented `@Test`**，2026-11-06 在 Pixel_7 模拟器 **clean 复跑 56/56**；2026-10-27 批次 E 后的 53/53 是旧口径。app 模块 JVM 当时报告为 **288 tests / 46 suites**（2026-11-06 与共享内核 94 合计 **382/382**；`GuideContentTest` 16 例，含双语工具书结构/英文覆盖/无中文校验；另有 `AccentPaletteTest` 4 例、`BallAppearanceTest` 4 例，`AppLockPolicyTest` 9 例，`OverlayGeometryTest` 7 例）；
+- 双向互操作测试：桌面端 bridge 编译为测试夹具生成器；`crypto-core` JVM 有完整单测（当前计数见[现状报告](../docs/android/项目现状报告与交接指南.md)）。设备侧有两个不同时间点的历史口径：第十一轮记录 **50/50**（当时 e2e 5、入口 filter 4）；当前源码为 **57 个 instrumented `@Test`**（新增启动/关于页 smoke 1），2026-11-06 在 Pixel_7 模拟器 **clean 复跑 56/56**；新增 smoke 后全量 57 项未重跑；2026-10-27 批次 E 后的 53/53 是旧口径。app 模块 JVM 当时报告为 **288 tests / 46 suites**（2026-11-06 与共享内核 94 合计 **382/382**；`GuideContentTest` 16 例，含双语工具书结构/英文覆盖/无中文校验；另有 `AccentPaletteTest` 4 例、`BallAppearanceTest` 4 例，`AppLockPolicyTest` 9 例，`OverlayGeometryTest` 7 例）；
   Phase 4a 的 12 例文件引擎测试包含 96 MB 大文件在 128 MB 堆下的流式往返；
   VOLU 另有 12 例引擎测试与 14 例严格 JSON 解析测试。
 - 悬浮球文字加解密（**工作模式开关**：打开 = 便捷模式，关闭 = 标准模式；实时生效，用户选的模式优先于系统权限状态）：
