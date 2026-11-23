@@ -145,7 +145,10 @@ public class PasswordStrengthChecker {
         }
 
         // 6. 常见弱密码检查（在char[]上检查）
-        if (isCommonPassword(password)) {
+        // 注意：命中常见口令必须直接压到「非常弱」。仅扣 30 分不够——像 P@ssw0rd 这类
+        // 四类字符齐全的常见口令，扣分后仍会落在「弱」，与“这是最常见的口令之一”矛盾。
+        boolean isCommon = isCommonPassword(password);
+        if (isCommon) {
             issues.add("这是一个常见的弱密码");
             recommendations.add("请避免使用常见密码");
             score = Math.max(0, score - 30);
@@ -184,6 +187,19 @@ public class PasswordStrengthChecker {
             level = StrengthLevel.STRONG;
         } else {
             level = StrengthLevel.VERY_STRONG;
+        }
+
+        // 封顶 1：命中常见口令，字符种类再齐全也只能是「非常弱」。
+        if (isCommon) {
+            level = StrengthLevel.VERY_WEAK;
+            score = 0;
+        }
+
+        // 封顶 2：低于最低长度要求时不得显示为「强」。11 位四类齐全曾得到 60 分而被
+        // 标成「强」，与“至少 12 位”的硬要求自相矛盾。
+        if (length < 12 && level.compareTo(StrengthLevel.WEAK) > 0) {
+            level = StrengthLevel.WEAK;
+            score = Math.min(score, 39);
         }
 
         return new StrengthResult(level, score, issues, recommendations);
