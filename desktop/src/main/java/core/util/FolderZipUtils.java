@@ -29,6 +29,17 @@ public class FolderZipUtils {
     private static final int MAX_SEGMENTS = 32;
     private static final int MAX_SEGMENT_CHARS = 255;
 
+    /**
+     * Windows 设备名：无论扩展名是什么都会被系统当成设备（
+     * {@code CON.txt} 也是控制台）。在 NTFS 上写入这类名字会失败、开控制台，
+     * 或者被静默吃掉，所以解压前就必须拒绝。
+     */
+    private static final java.util.Set<String> WINDOWS_RESERVED_NAMES =
+            new java.util.HashSet<>(java.util.Arrays.asList(
+                    "CON", "PRN", "AUX", "NUL",
+                    "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9",
+                    "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9"));
+
     public interface ProgressListener {
         void onProgress(int current, int total, String currentItem);
     }
@@ -353,6 +364,19 @@ public class FolderZipUtils {
                     && segment.charAt(1) == ':'
                     && Character.isLetter(segment.charAt(0))) {
                 throw new IOException("ZIP 条目不能包含盘符");
+            }
+            // Windows 会去掉结尾的点和空格："a." 与 "a" 实际同一个文件，
+            // 两个条目并存时会静默合并，必须拒绝而不是假装成功。
+            if (segment.endsWith(".") || segment.endsWith(" ")) {
+                throw new IOException("ZIP 条目路径段不能以点或空格结尾");
+            }
+            String baseName = segment;
+            int dotIndex = baseName.indexOf('.');
+            if (dotIndex >= 0) {
+                baseName = baseName.substring(0, dotIndex);
+            }
+            if (WINDOWS_RESERVED_NAMES.contains(baseName.toUpperCase(java.util.Locale.ROOT))) {
+                throw new IOException("ZIP 条目包含 Windows 保留名: " + segment);
             }
         }
         return name;
