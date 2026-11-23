@@ -69,7 +69,7 @@ Release 签名读取 `android/keystore.properties`（不入库）；缺少该文
 ```bash
 cd android && ./gradlew :crypto-core:publishToMavenLocal
 cd ../desktop && mvn -B clean package -DskipTests
-java -jar target/asymmetric-encryption-tool-1.4.2-jar-with-dependencies.jar
+java -jar target/asymmetric-encryption-tool-1.4.3-jar-with-dependencies.jar
 ```
 
 Windows 上可打包自带运行时的便携 ZIP（需要带 `jlink` / `jpackage` 的 JDK 17）：
@@ -77,7 +77,7 @@ Windows 上可打包自带运行时的便携 ZIP（需要带 `jlink` / `jpackage
 ```bat
 cd desktop
 package-portable.bat
-:: 产物：desktop\target\portable\CryptoAssistant-1.4.2-win64.zip
+:: 产物：desktop\target\portable\CryptoAssistant-1.4.3-win64.zip
 ```
 
 生成 Windows EXE 安装器（需管理员安装；构建机需 WiX Toolset 3，脚本会自动探测 `%LOCALAPPDATA%\CryptoAssistant\build-tools\wix3` 或 Program Files）：
@@ -85,7 +85,7 @@ package-portable.bat
 ```bat
 cd desktop
 package-installer.bat
-:: 产物：desktop\target\installer\CryptoAssistant-1.4.2.exe
+:: 产物：desktop\target\installer\CryptoAssistant-1.4.3.exe
 ```
 
 ## 已知限制

@@ -1,6 +1,6 @@
 # 加密助手 · Android 端
 
-> 当前阶段：Android 主功能已实现，当前源码版本 **`1.4.2` / versionCode 28**（applicationId `com.cryptoassistant.app`）；许可证 **GPL-3.0-only**。项目按**开源、侧载分发**推进，**不计划上架 Google Play 或国内应用商店**。
+> 当前阶段：Android 主功能已实现，当前源码版本 **`1.4.3` / versionCode 29**（applicationId `com.cryptoassistant.app`）；许可证 **GPL-3.0-only**。项目按**开源、侧载分发**推进，**不计划上架 Google Play 或国内应用商店**。
 > 功能包括源码审计、首页「使用说明」工具书（8 章 33 节）、**简体中文 / English 双语界面（跟随系统或 Android 13+ 应用语言）**、悬浮球标准/便捷模式、文件/目录流式加解密、VOLU 单卷读取与外部分卷写入、合卷后安全解压、VIEW/SEND 单入口判型、完整密钥备份、可选生物识别安全锁（密钥与日志敏感操作前验证）与可选应用锁（只锁主界面，默认关），分级诊断日志、缓存清理与租约、T9 胶囊展开、T12 便捷模式磁贴、T13 每次点球的无障碍引导面板、**D20 输入框结构日志/写后回读探针**，以及 **T14 阶段 1–3 的点球整框读取、写前重读与 150/800ms 回读验证**。真机矩阵仍有未完成项，见下方交接状态与局限。
 > **文字加解密只发生在悬浮球**：应用内不提供独立的文字加解密页。
 > 文件加解密在「文件」页完成：SAF 可一次选多个文件，或选一个文件夹递归收集，按顺序流式处理；
@@ -212,7 +212,7 @@ export JAVA_HOME="$HOME/.jdks/corretto-17"   # Windows Git Bash
 ```
 
 产物：`android/app/build/outputs/apk/debug/app-debug.apk`
-（当前源码 `1.4.2` / `versionCode 28`；debug APK 体积与 sha256 每次构建都可能变化。旧 1.3.0/25 包早于 P1/P2/P4，不能用于新功能验收）
+（当前源码 `1.4.3` / `versionCode 29`；debug APK 体积与 sha256 每次构建都可能变化。旧 1.3.0/25 包早于 P1/P2/P4，不能用于新功能验收）
 
 安装到已连接的设备/模拟器：
 
@@ -786,7 +786,7 @@ com.cryptoassistant.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION   # AndroidX �
 
 | 依赖 | 版本 | 许可证 | 用途 |
 |---|---|---|---|
-| **加密助手（本应用）** | **1.4.2** | **GPL-3.0-only** | 应用本体；源码随仓库提供 |
+| **加密助手（本应用）** | **1.4.3** | **GPL-3.0-only** | 应用本体；源码随仓库提供 |
 | AndroidX Core KTX | 1.17.0 | Apache-2.0 | 基础 KTX |
 | AndroidX Activity Compose | 1.12.4 | Apache-2.0 | Compose Activity / 权限请求 |
 | AndroidX Lifecycle | 2.9.4 | Apache-2.0 | 生命周期与状态收集 |
