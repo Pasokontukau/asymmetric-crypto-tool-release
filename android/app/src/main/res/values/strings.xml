@@ -214,7 +214,7 @@
     <string name="a11y_consent_title">权限由谁给</string>
     <string name="a11y_consent_body">必须在系统无障碍设置里手动开启，应用无法自行打开；随时关闭，关闭后点球会先打开引导面板，可选择重新开启或按剪贴板处理一次。</string>
     <string name="a11y_network_title">联网</string>
-    <string name="a11y_network_body">应用没有网络权限，读取的文字只在本机内存里处理。</string>
+    <string name="a11y_network_body">应用只在你开启「允许检查更新」后访问 GitHub 读取版本号；无障碍服务本身不联网，读取的文字只在本机内存里处理。</string>
     <string name="a11y_consented_at">你已同意过本版披露（%1$s）。</string>
     <string name="a11y_agree_checkbox">我已理解上述用途、访问范围和限制，并同意启用无障碍服务。</string>
     <string name="a11y_confirm">我理解并同意，前往开启</string>
@@ -259,7 +259,7 @@
     <string name="home_encrypt_desc">流式加密任意文件</string>
     <string name="home_decrypt_desc">校验后保存或分享</string>
     <string name="home_guide_desc">工具书 · 8 章 33 节，按主题查阅</string>
-    <string name="home_offline_note">无网络权限 · 密钥与内容只在本机处理</string>
+    <string name="home_offline_note">默认不联网 · 仅「检查更新」会联网</string>
 
     <!-- 密钥与备份错误 -->
     <string name="key_error_no_identity">尚未创建本机密钥</string>
@@ -330,7 +330,7 @@
     <string name="keys_section_notes">说明</string>
     <string name="keys_note_generate">生成 4096 位密钥通常需要几秒，请保持应用在前台。</string>
     <string name="keys_note_backup">备份包含公钥与口令加密的私钥；只接受本应用导出的完整备份。</string>
-    <string name="keys_note_offline">没有网络权限：密钥、口令、明文都不会离开设备。</string>
+    <string name="keys_note_offline">密钥、口令、明文只在本机处理；默认不联网，只有可选的「检查更新」会访问 GitHub 读取版本号。</string>
     <string name="keys_status_ready">已就绪</string>
     <string name="keys_tap_to_copy">点按卡片复制公钥，发给联系人即可</string>
     <string name="keys_label_key_size">密钥长度</string>
@@ -676,7 +676,7 @@
     <string name="files_signature_valid_unknown">签名有效 · 发送者未在联系人中</string>
     <string name="files_signature_invalid">发送者未识别 · 无法确认签名人</string>
     <string name="files_security_title">安全边界</string>
-    <string name="files_security_body">没有网络权限；文件、密钥与明文不离开设备。分享时只向目标应用授予这一份文件的临时读取权限，不会暴露私有目录或裸文件路径。</string>
+    <string name="files_security_body">文件、密钥与明文只在本机处理；默认不联网，只有可选的「检查更新」会访问 GitHub 读取版本号。分享时只向目标应用授予这一份文件的临时读取权限，不会暴露私有目录或裸文件路径。</string>
     <string name="files_share_prepare_failed">无法准备分享文件</string>
     <string name="files_no_share_target">没有可以接收文件的应用</string>
     <string name="files_open_prepare_failed">无法准备要打开的文件</string>

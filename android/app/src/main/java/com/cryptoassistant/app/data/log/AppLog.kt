@@ -21,7 +21,8 @@ import kotlinx.coroutines.flow.asStateFlow
  * - 输入框诊断额外记录**结构元数据**：前台应用包名、控件类名/资源 id/窗口号、
  *   是否可见/有选区、长度档位、是否位于 WebView（见 [FieldFacts]），不记录任何文字；
  * - 绝不写入明文、密文、密钥、口令、剪贴板内容、联系人公钥、文件名、路径或完整 URI；
- * - 文件落在应用私有目录 `files/logs/app.log`，不发往任何服务器（应用没有网络权限）；
+ * - 文件落在应用私有目录 `files/logs/app.log`，不发往任何服务器
+ *   （应用唯一的联网是默认关闭的可选更新检查）；
  * - 超过 [MAX_BYTES] 自动轮转成 `app.log.1`，最多保留两份，避免无限增长；
  * - 等级存在 SharedPreferences，Application 启动时同步读取，避免第一条日志越过关闭状态。
  */

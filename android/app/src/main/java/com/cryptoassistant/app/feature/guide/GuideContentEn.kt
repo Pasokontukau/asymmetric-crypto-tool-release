@@ -152,7 +152,7 @@ internal object GuideContentEn {
             blocks = listOf(
                 GuideBlock.Bullets(
                     listOf(
-                        "No network permission, no cloud, no analytics; keys, plaintext, and ciphertext are processed only on this device.",
+                        "Offline by default; only the optional “Allow update checks” contacts GitHub to read the version number. No cloud, no analytics; keys, plaintext, and ciphertext are processed only on this device.",
                         "Encryption needs the recipient’s public key; decryption only works for ciphertext addressed to the local key.",
                         "It never sends automatically, never pastes automatically, and never taps the send button in a chat window for you.",
                         "Apps such as WeChat and QQ may hide third-party accessibility nodes; when the input field cannot be read, only the clipboard fallback remains.",
@@ -628,12 +628,12 @@ internal object GuideContentEn {
         ),
         ("security" to "privacy") to SectionText(
             title = "Local data and privacy",
-            summary = "No network, private directory, temporary results, and permission scope.",
+            summary = "Offline by default, optional update checks, private directory, and permission scope.",
             lead = "All content stays on the device; permissions and cleanup rules together form the boundary.",
             blocks = listOf(
                 GuideBlock.Bullets(
                     listOf(
-                        "No INTERNET permission, and no ads, analytics, or crash upload.",
+                        "Offline by default; only after you enable “Allow update checks” does the app contact the GitHub Releases API to read the version number. It does not upload device, account, or file information.",
                         "Keys live in the app-private directory with the private key wrapped by Keystore; contacts store only public keys and fingerprints.",
                         "Temporary results live in the app-private directory and are cleaned on leaving the page, by the 6-hour lease, and on cold start.",
                         "Accessibility reads only the focused input field; it does not monitor the screen, collect events, or cache text.",

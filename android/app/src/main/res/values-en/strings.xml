@@ -217,7 +217,7 @@
     <string name="a11y_consent_title">Who grants permission</string>
     <string name="a11y_consent_body">You must enable it manually in system Accessibility settings; the app cannot enable it itself. You can turn it off at any time; after turning it off, tapping the ball opens a guide panel where you can re-enable it or process the clipboard once.</string>
     <string name="a11y_network_title">Network</string>
-    <string name="a11y_network_body">The app has no network permission; text is processed only in memory on this device.</string>
+    <string name="a11y_network_body">The app contacts GitHub to read the version number only when you enable “Allow update checks”. The accessibility service itself never accesses the network; text is processed only in memory on this device.</string>
     <string name="a11y_consented_at">You agreed to this version of the disclosure (%1$s).</string>
     <string name="a11y_agree_checkbox">I understand the purpose, scope, and limits above, and agree to enable the accessibility service.</string>
     <string name="a11y_confirm">I understand and agree; open settings</string>
@@ -266,7 +266,7 @@
     <string name="home_encrypt_desc">Stream-encrypt any file</string>
     <string name="home_decrypt_desc">Verify, then save or share</string>
     <string name="home_guide_desc">Guide · 8 chapters, 33 sections by topic</string>
-    <string name="home_offline_note">No network permission · Keys and content stay on this device</string>
+    <string name="home_offline_note">Offline by default · Only update checks go online</string>
 
     <!-- Key and backup errors -->
     <string name="key_error_no_identity">No local key has been created yet</string>
@@ -337,7 +337,7 @@
     <string name="keys_section_notes">Notes</string>
     <string name="keys_note_generate">Generating a 4096-bit key usually takes a few seconds; keep the app in the foreground.</string>
     <string name="keys_note_backup">The backup contains the public key and a password-encrypted private key; only full backups exported by this app are accepted.</string>
-    <string name="keys_note_offline">No network permission: keys, passwords, and plaintext never leave the device.</string>
+    <string name="keys_note_offline">Keys, passwords, and plaintext are processed only on this device; offline by default, with only the optional “Allow update checks” contacting GitHub to read the version number.</string>
     <string name="keys_status_ready">Ready</string>
     <string name="keys_tap_to_copy">Tap the card to copy the public key and send it to contacts</string>
     <string name="keys_label_key_size">Key size</string>
@@ -685,7 +685,7 @@
     <string name="files_signature_valid_unknown">Signature valid · sender not in contacts</string>
     <string name="files_signature_invalid">Sender not recognized · cannot confirm the signer</string>
     <string name="files_security_title">Security boundary</string>
-    <string name="files_security_body">No network permission; files, keys, and plaintext never leave the device. Sharing grants the target app temporary read access to this one file only, without exposing the private directory or bare file paths.</string>
+    <string name="files_security_body">Files, keys, and plaintext are processed only on this device; offline by default, with only the optional “Allow update checks” contacting GitHub to read the version number. Sharing grants the target app temporary read access to this one file only, without exposing the private directory or bare file paths.</string>
     <string name="files_share_prepare_failed">Cannot prepare the file for sharing</string>
     <string name="files_no_share_target">No app can receive this file</string>
     <string name="files_open_prepare_failed">Cannot prepare the file to open</string>

@@ -51,7 +51,8 @@ data class WriteBackResult(val success: Boolean, val verdict: String)
  * - 不监听、不缓存屏幕内容：`onAccessibilityEvent` 里不做任何采集；
  * - 读取只发生在用户点击悬浮球的瞬间，读取结果直接交给胶囊；
  * - 写回只作用于同一次点球里刚刚读取的那个控件（不再有旧胶囊的延迟写回链）；
- * - 不联网（应用本身没有 INTERNET 权限）；只在写回失败时记录原因，不记录文字内容。
+ * - 无障碍服务自身不发起网络请求（应用唯一的联网是默认关闭的可选更新检查）；
+ *   只在写回失败时记录原因，不记录文字内容。
  */
 class TextAccessibilityService : AccessibilityService() {
 

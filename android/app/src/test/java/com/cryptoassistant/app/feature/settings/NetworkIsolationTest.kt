@@ -102,4 +102,42 @@ class NetworkIsolationTest {
             UpdateCheck.LATEST_RELEASE_API,
         )
     }
+
+    /**
+     * 清单已经声明 INTERNET，用户可见文案就不能再说“无网络权限”。
+     * 这条测试专门防止 1.4.1 加更新检查后，旧隐私文案继续留在首页/使用说明里。
+     */
+    @Test
+    fun `user-facing copy does not claim there is no network permission`() {
+        val root = mainDir()
+        val files = listOf(
+            File(root, "res/values/strings.xml"),
+            File(root, "res/values-en/strings.xml"),
+            File(root, "java/com/cryptoassistant/app/feature/guide/GuideContent.kt"),
+            File(root, "java/com/cryptoassistant/app/feature/guide/GuideContentEn.kt"),
+            File(root, "java/com/cryptoassistant/app/service/TextAccessibilityService.kt"),
+        )
+        val forbidden = listOf(
+            "没有 INTERNET 权限",
+            "无网络权限",
+            "没有网络权限",
+            "No INTERNET permission",
+            "has no network permission",
+            "no network permission",
+        )
+        val findings = mutableListOf<String>()
+        files.forEach { file ->
+            assertTrue("missing ${file.path}", file.isFile)
+            file.readLines().forEachIndexed { index, line ->
+                if (forbidden.any { line.contains(it, ignoreCase = true) }) {
+                    findings += "${file.relativeTo(root).invariantSeparatorsPath}:${index + 1}: ${line.trim()}"
+                }
+            }
+        }
+        assertTrue(
+            "清单声明了 INTERNET，以下文案却在说没有网络权限：\n" +
+                findings.joinToString("\n"),
+            findings.isEmpty(),
+        )
+    }
 }
