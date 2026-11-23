@@ -20,6 +20,8 @@
         <!-- 源码提交，由 build/package 脚本用 git 算出并传进来（-Dgit.commit=...）。
              直接 mvn package 时保持 unknown，不猜测。 -->
         <git.commit>unknown</git.commit>
+        <!-- 构建时工作树是否有未提交的跟踪文件；由脚本用 git status 判断，写进 jar 清单。 -->
+        <git.dirty>unknown</git.dirty>
     </properties>
 
     <dependencies>
@@ -107,6 +109,7 @@
                              manifestEntries 是 archive 的子元素，不能放进 manifest 里。 -->
                         <manifestEntries>
                             <Implementation-Build>${git.commit}</Implementation-Build>
+                            <Implementation-Build-Dirty>${git.dirty}</Implementation-Build-Dirty>
                         </manifestEntries>
                     </archive>
                     <descriptorRefs>

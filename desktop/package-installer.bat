@@ -72,17 +72,32 @@ echo.
 
 REM ---------- build fat jar ----------
 echo [1/5] Building fat jar...
-REM Record the source commit into the jar manifest (Implementation-Build), so the About
-REM page can say which commit produced this build.
+REM Record the source commit and dirty flag into the jar manifest, so the About page
+REM and dist/BUILD-INFO.txt can prove which tree produced this build.
 set "GIT_COMMIT=unknown"
+set "GIT_DIRTY=unknown"
 set "GIT_COMMIT_FILE=%TEMP%\aegix-git-commit-%RANDOM%.txt"
 git -C "%CD%" rev-parse --short=9 HEAD > "%GIT_COMMIT_FILE%" 2>nul
 if exist "%GIT_COMMIT_FILE%" (
     set /p GIT_COMMIT=<"%GIT_COMMIT_FILE%"
     del "%GIT_COMMIT_FILE%" >nul 2>nul
 )
-echo [INFO] Source commit: %GIT_COMMIT%
-call "%MVN%" clean package -DskipTests "-Dgit.commit=%GIT_COMMIT%"
+if not "%GIT_COMMIT%"=="unknown" (
+    set "GIT_STATUS_FILE=%TEMP%\aegix-git-status-%RANDOM%.txt"
+    git -C "%CD%" status --porcelain --untracked-files=no > "%GIT_STATUS_FILE%" 2>nul
+    set "GIT_DIRTY=false"
+    for %%A in ("%GIT_STATUS_FILE%") do if %%~zA GTR 0 set "GIT_DIRTY=true"
+    del "%GIT_STATUS_FILE%" >nul 2>nul
+)
+echo [INFO] Source commit: %GIT_COMMIT% (dirty=%GIT_DIRTY%)
+if "%GIT_DIRTY%"=="true" if not "%AEGIX_ALLOW_DIRTY%"=="1" (
+    echo ERROR: Working tree has uncommitted tracked changes.
+    echo   Commit them first. For a local experiment only: set AEGIX_ALLOW_DIRTY=1
+    echo   The package is recorded dirty and the release gate will reject it.
+    exit /b 1
+)
+if "%GIT_DIRTY%"=="true" echo [WARN] Building dirty on purpose (AEGIX_ALLOW_DIRTY=1); release gate will reject.
+call "%MVN%" clean package -DskipTests "-Dgit.commit=%GIT_COMMIT%" "-Dgit.dirty=%GIT_DIRTY%"
 if errorlevel 1 (
     echo ERROR: Maven build failed.
     exit /b 1
