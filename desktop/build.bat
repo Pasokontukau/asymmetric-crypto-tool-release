@@ -70,19 +70,14 @@ REM Record the source commit and dirty flag into the jar manifest, so the About 
 REM and dist/BUILD-INFO.txt can prove which tree produced this build.
 set "GIT_COMMIT=unknown"
 set "GIT_DIRTY=unknown"
-set "GIT_COMMIT_FILE=%TEMP%\aegix-git-commit-%RANDOM%.txt"
-git -C "%CD%" rev-parse --short=9 HEAD > "%GIT_COMMIT_FILE%" 2>nul
-if exist "%GIT_COMMIT_FILE%" (
-    set /p GIT_COMMIT=<"%GIT_COMMIT_FILE%"
-    del "%GIT_COMMIT_FILE%" >nul 2>nul
-)
-if not "%GIT_COMMIT%"=="unknown" (
-    set "GIT_STATUS_FILE=%TEMP%\aegix-git-status-%RANDOM%.txt"
-    git -C "%CD%" status --porcelain --untracked-files=no > "%GIT_STATUS_FILE%" 2>nul
-    set "GIT_DIRTY=false"
-    for %%A in ("%GIT_STATUS_FILE%") do if %%~zA GTR 0 set "GIT_DIRTY=true"
-    del "%GIT_STATUS_FILE%" >nul 2>nul
-)
+rem Capture git output with for /f instead of writing a temp file and reading it
+rem back with set /p: under chcp 65001 the set /p read leaves %GIT_COMMIT% unset,
+rem and the following block then fails to parse ("The system cannot find the path
+rem specified.") when the repository path contains non-ASCII characters.
+for /f "delims=" %%v in ('git -C "%CD%" rev-parse --short=9 HEAD 2^>nul') do set "GIT_COMMIT=%%v"
+set "GIT_DIRTY=false"
+for /f "delims=" %%s in ('git -C "%CD%" status --porcelain --untracked-files=no 2^>nul') do set "GIT_DIRTY=true"
+if "%GIT_COMMIT%"=="unknown" set "GIT_DIRTY=unknown"
 echo [INFO] Source commit: %GIT_COMMIT% (dirty=%GIT_DIRTY%)
 if "%GIT_DIRTY%"=="true" echo [WARN] Uncommitted tracked changes detected; this build is NOT reproducible.
 call "%MVN%" clean package -DskipTests "-Dgit.commit=%GIT_COMMIT%" "-Dgit.dirty=%GIT_DIRTY%"
