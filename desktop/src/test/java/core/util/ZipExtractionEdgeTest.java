@@ -196,6 +196,60 @@ public class ZipExtractionEdgeTest {
         }
     }
 
+    /**
+     * S-16：内容损坏但结构还能解析的 ZIP（STORED + CRC 不符）必须被拒绝，
+     * 而不是“解压成功”后给用户一堆坏文件。
+     */
+    @Test
+    public void corruptedStoredEntryIsRejected() throws Exception {
+        byte[] data = "hello-corrupted-payload".getBytes(StandardCharsets.UTF_8);
+        java.util.zip.CRC32 crc = new java.util.zip.CRC32();
+        crc.update(data);
+
+        File zip = folder.newFile("stored.zip");
+        try (java.util.zip.ZipOutputStream out =
+                     new java.util.zip.ZipOutputStream(new FileOutputStream(zip))) {
+            java.util.zip.ZipEntry entry = new java.util.zip.ZipEntry("payload.bin");
+            entry.setMethod(java.util.zip.ZipEntry.STORED);
+            entry.setSize(data.length);
+            entry.setCrc(crc.getValue());
+            out.putNextEntry(entry);
+            out.write(data);
+            out.closeEntry();
+        }
+
+        byte[] bytes = Files.readAllBytes(zip.toPath());
+        int needle = indexOf(bytes, data);
+        assertTrue("测试数据没找到", needle >= 0);
+        bytes[needle + 3] ^= 0x7F;
+        Files.write(zip.toPath(), bytes);
+
+        File dest = folder.newFolder("corrupted");
+        try {
+            FolderZipUtils.unzipFolder(zip, dest, null);
+            fail("CRC 不符的条目必须被拒绝");
+        } catch (IOException expected) {
+            assertTrue("错误信息应提到校验/CRC: " + expected.getMessage(),
+                    expected.getMessage().contains("CRC") || expected.getMessage().contains("校验"));
+        }
+        File[] produced = dest.listFiles();
+        assertNotNull(produced);
+        assertEquals("失败时不能留下半成品", 0, produced.length);
+    }
+
+    private static int indexOf(byte[] haystack, byte[] needle) {
+        outer:
+        for (int i = 0; i + needle.length <= haystack.length; i++) {
+            for (int j = 0; j < needle.length; j++) {
+                if (haystack[i + j] != needle[j]) {
+                    continue outer;
+                }
+            }
+            return i;
+        }
+        return -1;
+    }
+
     @Test
     public void entryCountLimitIsEnforced() throws Exception {
         Map<String, byte[]> many = new LinkedHashMap<>();

@@ -274,16 +274,16 @@ public class FolderZipUtils {
             throw new IOException("无法创建解压目录: " + destFolder);
         }
 
-        try (FileInputStream fis = new FileInputStream(zipFile);
-             BufferedInputStream bis = new BufferedInputStream(fis, 65536);
-             ZipInputStream zis = new ZipInputStream(bis)) {
-
-            ZipEntry entry;
+        // 用 ZipFile 而不是 ZipInputStream：中央目录里有权威的 CRC 与大小，
+        // 边写边校验才能发现“能解开但内容是错的”损坏包（流式读取拿不到可靠的 CRC）。
+        try (java.util.zip.ZipFile zip = new java.util.zip.ZipFile(zipFile)) {
+            java.util.Enumeration<? extends ZipEntry> enumeration = zip.entries();
             int currentEntry = 0;
             long totalBytes = 0L;
             byte[] buffer = new byte[65536];
-            
-            while ((entry = zis.getNextEntry()) != null) {
+
+            while (enumeration.hasMoreElements()) {
+                ZipEntry entry = enumeration.nextElement();
                 currentEntry++;
                 if (currentEntry > MAX_ENTRIES) {
                     throw new IOException("ZIP 条目超过 " + MAX_ENTRIES + " 个");
@@ -305,20 +305,37 @@ public class FolderZipUtils {
                         throw new IOException("无法创建解压目录: " + parentDir);
                     }
 
-                    try (FileOutputStream fos = new FileOutputStream(target);
-                         BufferedOutputStream bos = new BufferedOutputStream(fos, 65536)) {
-                        int bytesRead;
-                        while ((bytesRead = zis.read(buffer)) != -1) {
-                            totalBytes += bytesRead;
-                            if (totalBytes > MAX_TOTAL_BYTES) {
-                                throw new IOException("解压总量超过 4 GiB");
+                    long entryBytes = 0L;
+                    java.util.zip.CRC32 crc = new java.util.zip.CRC32();
+                    try {
+                        try (java.io.InputStream entryInput = zip.getInputStream(entry);
+                             java.util.zip.CheckedOutputStream checked =
+                                     new java.util.zip.CheckedOutputStream(
+                                             new FileOutputStream(target), crc);
+                             BufferedOutputStream bos = new BufferedOutputStream(checked, 65536)) {
+                            int bytesRead;
+                            while ((bytesRead = entryInput.read(buffer)) != -1) {
+                                totalBytes += bytesRead;
+                                entryBytes += bytesRead;
+                                if (totalBytes > MAX_TOTAL_BYTES) {
+                                    throw new IOException("解压总量超过 4 GiB");
+                                }
+                                bos.write(buffer, 0, bytesRead);
                             }
-                            bos.write(buffer, 0, bytesRead);
                         }
+                        if (entry.getSize() >= 0 && entryBytes != entry.getSize()) {
+                            throw new IOException("ZIP 条目大小不符: " + entryName);
+                        }
+                        if (entry.getCrc() >= 0 && crc.getValue() != entry.getCrc()) {
+                            throw new IOException("ZIP 条目校验失败（CRC 不符）: " + entryName);
+                        }
+                    } catch (IOException failure) {
+                        // 半成品不能留在磁盘上冒充“解压成功”。
+                        //noinspection ResultOfMethodCallIgnored
+                        target.delete();
+                        throw failure;
                     }
                 }
-
-                zis.closeEntry();
             }
         }
     }

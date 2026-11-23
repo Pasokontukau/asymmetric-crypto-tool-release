@@ -204,9 +204,13 @@ object ArchiveExtractor {
 
                         entryInput.use { input ->
                             createdFile.output.use { output ->
+                                // 边写边算 CRC：ZipFile 不替我们校验内容，损坏的包
+                                // 会被“成功”解成一堆坏文件。
+                                val crc = java.util.zip.CRC32()
+                                val checked = java.util.zip.CheckedOutputStream(output, crc)
                                 val copied = copyEntry(
                                     input = input,
-                                    output = output,
+                                    output = checked,
                                     bytesDone = bytesDone,
                                     filesDone = filesDone,
                                     filesTotal = filesTotal,
@@ -214,6 +218,23 @@ object ArchiveExtractor {
                                     cancel = cancel,
                                     onProgress = onProgress,
                                 )
+                                checked.flush()
+                                node.entry?.size?.let { expected ->
+                                    if (expected >= 0 && copied != expected) {
+                                        throw ArchiveExtractException(
+                                            ArchiveExtractException.Reason.EXTRACT,
+                                            "ZIP 条目大小不符",
+                                        )
+                                    }
+                                }
+                                node.entry?.crc?.let { expected ->
+                                    if (expected >= 0 && crc.value != expected) {
+                                        throw ArchiveExtractException(
+                                            ArchiveExtractException.Reason.EXTRACT,
+                                            "ZIP 条目校验失败（CRC 不符）",
+                                        )
+                                    }
+                                }
                                 bytesDone += copied
                             }
                         }

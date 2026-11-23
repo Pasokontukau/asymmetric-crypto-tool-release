@@ -303,4 +303,46 @@ class ArchiveExtractorTest {
         assertEquals(ArchiveExtractException.Reason.LIMIT, error.reason)
         assertTrue(target.listFiles().isNullOrEmpty())
     }
+
+    /**
+     * S-16：内容被篡改但结构仍可解析的条目（STORED + CRC 不符）必须整体失败，
+     * 不能“跳过”或“成功”后留下坏文件。
+     */
+    @Test
+    fun `rejects entry whose content does not match crc`() {
+        val data = "tampered-content-0123456789".toByteArray()
+        val crc = java.util.zip.CRC32().apply { update(data) }
+        val zipFile = temporaryFolder.newFile("stored-bad-${System.nanoTime()}.zip")
+        ZipOutputStream(zipFile.outputStream()).use { zip ->
+            val entry = ZipEntry("payload.bin")
+            entry.method = ZipEntry.STORED
+            entry.size = data.size.toLong()
+            entry.crc = crc.value
+            zip.putNextEntry(entry)
+            zip.write(data)
+            zip.closeEntry()
+        }
+
+        val bytes = zipFile.readBytes()
+        val index = indexOf(bytes, data)
+        assertTrue("测试数据没找到", index >= 0)
+        bytes[index + 2] = (bytes[index + 2].toInt() xor 0x5A).toByte()
+        zipFile.writeBytes(bytes)
+
+        val target = temporaryFolder.newFolder("crc-out")
+        assertThrows(ArchiveExtractException::class.java) {
+            extract(zipFile, target)
+        }
+        assertTrue("失败后不能留下半成品", target.listFiles().isNullOrEmpty())
+    }
+
+    private fun indexOf(haystack: ByteArray, needle: ByteArray): Int {
+        outer@ for (i in 0..haystack.size - needle.size) {
+            for (j in needle.indices) {
+                if (haystack[i + j] != needle[j]) continue@outer
+            }
+            return i
+        }
+        return -1
+    }
 }
